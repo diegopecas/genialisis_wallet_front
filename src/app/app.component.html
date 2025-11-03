@@ -1,0 +1,45 @@
+<div class="app-container" *ngIf="isAuthenticated()">
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h1 class="app-title">Circle Finance</h1>
+        <p class="app-subtitle">{{ currentCirculo?.icono }} {{ currentCirculo?.nombre }}</p>
+      </div>
+      <button class="logout-btn" (click)="logout()" title="Cerrar sesión">
+        🚪
+      </button>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs-container">
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'ingresos'"
+      (click)="changeTab('ingresos')">
+      <span class="tab-icon">💰</span>
+      <span>Ingresos</span>
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'gastos'"
+      (click)="changeTab('gastos')">
+      <span class="tab-icon">💸</span>
+      <span>Gastos</span>
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'balance'"
+      (click)="changeTab('balance')">
+      <span class="tab-icon">📊</span>
+      <span>Balance</span>
+    </button>
+  </div>
+
+  <!-- CONTENIDO -->
+  <router-outlet></router-outlet>
+</div>
+
+<!-- LOGIN -->
+<router-outlet *ngIf="!isAuthenticated()"></router-outlet>

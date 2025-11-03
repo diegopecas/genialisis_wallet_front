@@ -1,0 +1,263 @@
+.tab-content {
+  padding: 20px;
+  padding-bottom: 80px;
+}
+
+/* FILTROS */
+.filters-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.filters-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+}
+
+.filters-form {
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .form-group {
+    margin-bottom: 0;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+  }
+
+  .form-select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+    }
+  }
+}
+
+/* CARDS DE BALANCE */
+.balance-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.balance-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  border-left: 4px solid;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  &.income {
+    border-left-color: var(--success);
+    
+    .balance-value {
+      color: var(--success);
+    }
+  }
+
+  &.expense {
+    border-left-color: var(--danger);
+    
+    .balance-value {
+      color: var(--danger);
+    }
+  }
+
+  &.net {
+    border-left-color: var(--primary);
+    
+    .balance-value {
+      color: var(--primary);
+    }
+
+    &.negative {
+      border-left-color: var(--danger);
+      
+      .balance-value {
+        color: var(--danger);
+      }
+    }
+  }
+}
+
+.balance-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+
+.balance-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+/* GRÁFICO */
+.chart-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+}
+
+.chart-container {
+  position: relative;
+  height: 300px;
+  
+  canvas {
+    max-height: 300px;
+  }
+}
+
+/* DETALLE */
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.detail-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+
+  &.income {
+    color: var(--success);
+    border-bottom-color: var(--success);
+  }
+
+  &.expense {
+    color: var(--danger);
+    border-bottom-color: var(--danger);
+  }
+}
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 10px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #e8e8e8;
+  }
+}
+
+.detail-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.detail-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 2px;
+}
+
+.detail-count {
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.detail-value {
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+
+  &.income {
+    color: var(--success);
+  }
+
+  &.expense {
+    color: var(--danger);
+  }
+}
+
+/* LOADING */
+.loading-message {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+/* RESPONSIVE */
+@media (min-width: 768px) {
+  .balance-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

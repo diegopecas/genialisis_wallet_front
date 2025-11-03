@@ -1,0 +1,111 @@
+<div class="tab-content">
+  <!-- FORMULARIO -->
+  <div class="form-card">
+    <h2 class="form-title">💰 Registrar Ingreso</h2>
+
+    <form [formGroup]="ingresoForm" (ngSubmit)="onSubmit()">
+      <!-- FECHA -->
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input type="date" formControlName="fecha" class="form-input" />
+        <div class="form-error" *ngIf="ingresoForm.get('fecha')?.invalid && ingresoForm.get('fecha')?.touched">
+          Fecha es requerida
+        </div>
+      </div>
+      <!-- VALOR -->
+      <div class="form-group">
+        <label class="form-label">Valor</label>
+        <input type="number" formControlName="valor" class="form-input" placeholder="Ej: 50000" />
+        <div class="form-error" *ngIf="ingresoForm.get('valor')?.invalid && ingresoForm.get('valor')?.touched">
+          Valor es requerido
+        </div>
+      </div>
+
+      <!-- DETALLE (debajo del valor) -->
+      <div class="form-group" *ngIf="requiereDetalle || ingresoForm.get('detalle')?.value">
+        <label class="form-label">
+          Detalle
+          <span class="optional">(opcional)</span>
+        </label>
+        <input type="text" formControlName="detalle" class="form-input" placeholder="Ej: Proyecto freelance" />
+      </div>
+
+      <!-- CONCEPTO SELECCIONADO -->
+      <div class="concepto-selected" *ngIf="conceptoSeleccionado">
+        <div class="selected-info">
+          <span class="selected-icon">{{ conceptoSeleccionado.icono }}</span>
+          <div class="selected-text">
+            <div class="selected-name">{{ conceptoSeleccionado.nombre }}</div>
+          </div>
+        </div>
+        <button type="button" class="clear-btn" (click)="limpiarSeleccion()">
+          ✕
+        </button>
+      </div>
+
+      <!-- SELECTOR DE CONCEPTOS (solo visible si no hay selección) -->
+      <div class="conceptos-section" *ngIf="!conceptoSeleccionado">
+        <label class="form-label">Concepto *</label>
+
+        <!-- BUSCADOR -->
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" placeholder="Buscar concepto..." [(ngModel)]="searchTerm"
+            [ngModelOptions]="{standalone: true}" (input)="buscarConceptos($event)" />
+        </div>
+
+        <!-- CONCEPTOS EN GRID COMPACTO -->
+        <div class="conceptos-grid" *ngIf="!loading && conceptosFiltrados.length > 0">
+          <div *ngFor="let item of conceptosFiltrados" class="concepto-card" (click)="seleccionarConcepto(item)">
+            <span class="concepto-icon">{{ item.concepto.icono }}</span>
+            <div class="concepto-info">
+              <div class="concepto-name">{{ item.concepto.nombre }}</div>
+              <div class="concepto-categoria">{{ item.categoria }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="conceptosFiltrados.length === 0" class="no-results">
+          No se encontraron conceptos
+        </div>
+
+        <div class="form-error"
+          *ngIf="ingresoForm.get('concepto_id')?.invalid && ingresoForm.get('concepto_id')?.touched">
+          Debes seleccionar un concepto
+        </div>
+      </div>
+
+      <!-- BOTÓN GUARDAR -->
+      <button type="submit" class="submit-btn" [disabled]="!ingresoForm.valid || loading">
+        {{ loading ? 'Guardando...' : 'Guardar Ingreso' }}
+      </button>
+    </form>
+  </div>
+
+  <!-- ÚLTIMOS INGRESOS -->
+  <div class="movimientos-card" *ngIf="ingresos.length > 0">
+    <h3 class="movimientos-title">📋 Últimos Ingresos</h3>
+
+    <div class="movimiento-item" *ngFor="let ingreso of ingresos">
+      <div class="movimiento-info">
+        <div class="movimiento-top">
+          <span class="movimiento-icon">{{ ingreso.concepto_icono }}</span>
+          <div class="movimiento-text">
+            <div class="movimiento-concepto">{{ ingreso.concepto_nombre }}</div>
+            <div class="movimiento-fecha">
+              {{ ingreso.fecha | date:'dd/MM/yyyy' }}
+              <span class="movimiento-usuario" *ngIf="ingreso.usuario_nombre">• {{ ingreso.usuario_nombre }}</span>
+            </div>
+            <div class="movimiento-detalle" *ngIf="ingreso.detalle">{{ ingreso.detalle }}</div>
+          </div>
+        </div>
+        <div class="movimiento-valor success">{{ formatearValor(ingreso.valor) }}</div>
+      </div>
+      <button class="delete-btn" (click)="eliminarIngreso(ingreso.id)">🗑️</button>
+    </div>
+  </div>
+
+  <div class="empty-message" *ngIf="ingresos.length === 0 && !loading">
+    No hay ingresos registrados
+  </div>
+</div>
