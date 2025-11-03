@@ -12,7 +12,10 @@ import {
   MovimientosResponse,
   BalanceResponse,
   BalanceDetalladoResponse,
-  EvolucionResponse
+  EvolucionResponse,
+  TotalesPorDiaResponse,
+  TotalesPorCategoriaResponse,
+  GraficoCategoriaResponse
 } from '../models/movimiento.model';
 
 @Injectable({
@@ -116,5 +119,55 @@ export class MovimientosService {
     if (anio) params.anio = anio;
 
     return this.apiService.get<EvolucionResponse>('movimientos/evolucion', params);
+  }
+
+  /**
+   * Obtener totales agrupados por día
+   */
+  getTotalesPorDia(
+    circuloId?: number,
+    anio?: number,
+    mes?: number
+  ): Observable<TotalesPorDiaResponse> {
+    const params: any = {};
+    
+    if (circuloId) params.circulo_id = circuloId;
+    if (anio) params.anio = anio;
+    if (mes) params.mes = mes;
+
+    return this.apiService.get<TotalesPorDiaResponse>('movimientos/totales/dia', params);
+  }
+
+  /**
+   * Obtener totales agrupados por categoría
+   */
+  getTotalesPorCategoria(
+    circuloId?: number,
+    anio?: number,
+    mes?: number
+  ): Observable<TotalesPorCategoriaResponse> {
+    const params: any = {};
+    
+    if (circuloId) params.circulo_id = circuloId;
+    if (anio) params.anio = anio;
+    if (mes) params.mes = mes;
+
+    return this.apiService.get<TotalesPorCategoriaResponse>('movimientos/totales/categoria', params);
+  }
+
+  /**
+   * Obtener datos para gráfico de barras por categoría
+   */
+  getGraficoCategoria(
+    circuloId: number,
+    anio?: number,
+    mes?: number
+  ): Observable<GraficoCategoriaResponse> {
+    const params: any = { circulo_id: circuloId };
+    
+    if (anio) params.anio = anio;
+    if (mes) params.mes = mes;
+
+    return this.apiService.get<GraficoCategoriaResponse>('movimientos/grafico/categoria', params);
   }
 }

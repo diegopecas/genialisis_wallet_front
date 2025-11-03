@@ -24,6 +24,7 @@ export class GastosComponent implements OnInit {
   conceptosFiltrados: { categoria: string; concepto: Concepto }[] = [];
   todosLosConceptos: { categoria: string; concepto: Concepto }[] = [];
   conceptoSeleccionado: Concepto | null = null;
+  categoriaSeleccionada: string = '';
   searchTerm: string = '';
   loading = false;
   circuloId: number = 0;
@@ -106,9 +107,9 @@ export class GastosComponent implements OnInit {
 
   seleccionarConcepto(item: { categoria: string; concepto: Concepto }): void {
     this.conceptoSeleccionado = item.concepto;
+    this.categoriaSeleccionada = item.categoria;
     this.gastoForm.patchValue({ concepto_id: item.concepto.id });
 
-    // CAMBIO: Ya no agregar validación obligatoria aunque requiere_detalle sea TRUE
     // El detalle siempre será opcional
     this.gastoForm.get('detalle')?.clearValidators();
     this.gastoForm.get('detalle')?.updateValueAndValidity();
@@ -116,6 +117,7 @@ export class GastosComponent implements OnInit {
 
   limpiarSeleccion(): void {
     this.conceptoSeleccionado = null;
+    this.categoriaSeleccionada = '';
     this.searchTerm = '';
     this.conceptosFiltrados = [...this.todosLosConceptos];
     this.gastoForm.patchValue({ concepto_id: '' });
@@ -174,23 +176,5 @@ export class GastosComponent implements OnInit {
 
   get requiereDetalle(): boolean {
     return this.conceptoSeleccionado?.requiere_detalle || false;
-  }
-
-  // Agrupar conceptos filtrados por categoría
-  get conceptosAgrupadosPorCategoria(): { [key: string]: { categoria: string; concepto: Concepto }[] } {
-    const agrupados: { [key: string]: { categoria: string; concepto: Concepto }[] } = {};
-
-    this.conceptosFiltrados.forEach(item => {
-      if (!agrupados[item.categoria]) {
-        agrupados[item.categoria] = [];
-      }
-      agrupados[item.categoria].push(item);
-    });
-
-    return agrupados;
-  }
-
-  get categoriasVisibles(): string[] {
-    return Object.keys(this.conceptosAgrupadosPorCategoria);
   }
 }

@@ -95,3 +95,52 @@ export interface EvolucionResponse {
     datos: EvolucionMes[];
   };
 }
+export interface TotalPorDia {
+  fecha: string;
+  total_ingresos: number;
+  total_gastos: number;
+  cantidad_ingresos: number;
+  cantidad_gastos: number;
+}
+
+export interface TotalesPorDiaResponse {
+  success: boolean;
+  message: string;
+  data: {
+    totales: TotalPorDia[];
+  };
+}
+
+export interface TotalPorCategoria {
+  categoria_id: number;
+  categoria_nombre: string;
+  categoria_icono: string;
+  categoria_color: string;
+  tipo_movimiento: 'Ingreso' | 'Gasto';
+  cantidad: number;
+  total: number;
+}
+
+export interface TotalesPorCategoriaResponse {
+  success: boolean;
+  message: string;
+  data: {
+    totales: TotalPorCategoria[];
+  };
+}
+export interface GraficoCategoria {
+  categoria_id: number;
+  categoria_nombre: string;
+  categoria_icono: string;
+  categoria_color: string;
+  total_ingresos: number;
+  total_gastos: number;
+}
+
+export interface GraficoCategoriaResponse {
+  success: boolean;
+  message: string;
+  data: {
+    categorias: GraficoCategoria[];
+  };
+}

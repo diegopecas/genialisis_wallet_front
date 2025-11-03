@@ -379,3 +379,18 @@
   color: var(--text-light);
   font-size: 14px;
 }
+
+// Categoría en concepto seleccionado
+.selected-categoria {
+  font-size: 0.75rem;
+  color: #757575;
+  margin-top: 2px;
+}
+
+// Categoría en listado de movimientos
+.movimiento-categoria {
+  font-size: 0.75rem;
+  color: #757575;
+  margin-top: 2px;
+  font-weight: 500;
+}

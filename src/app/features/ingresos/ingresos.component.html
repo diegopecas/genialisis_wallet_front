@@ -12,6 +12,7 @@
           Fecha es requerida
         </div>
       </div>
+
       <!-- VALOR -->
       <div class="form-group">
         <label class="form-label">Valor</label>
@@ -36,6 +37,7 @@
           <span class="selected-icon">{{ conceptoSeleccionado.icono }}</span>
           <div class="selected-text">
             <div class="selected-name">{{ conceptoSeleccionado.nombre }}</div>
+            <div class="selected-categoria">{{ categoriaSeleccionada }}</div>
           </div>
         </div>
         <button type="button" class="clear-btn" (click)="limpiarSeleccion()">
@@ -92,6 +94,7 @@
           <span class="movimiento-icon">{{ ingreso.concepto_icono }}</span>
           <div class="movimiento-text">
             <div class="movimiento-concepto">{{ ingreso.concepto_nombre }}</div>
+            <div class="movimiento-categoria">{{ ingreso.categoria_nombre }}</div>
             <div class="movimiento-fecha">
               {{ ingreso.fecha | date:'dd/MM/yyyy' }}
               <span class="movimiento-usuario" *ngIf="ingreso.usuario_nombre">• {{ ingreso.usuario_nombre }}</span>

@@ -9,7 +9,14 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { AuthService } from '../../core/services/auth.service';
 import { MovimientosService } from '../../core/services/movimientos.service';
-import { Balance, DetalleConcepto, EvolucionMes } from '../../core/models/movimiento.model';
+import {
+  Balance,
+  DetalleConcepto,
+  EvolucionMes,
+  TotalPorDia,
+  TotalPorCategoria,
+  GraficoCategoria
+} from '../../core/models/movimiento.model';
 
 Chart.register(...registerables);
 
@@ -21,16 +28,22 @@ Chart.register(...registerables);
   styleUrls: ['./balance.component.scss']
 })
 export class BalanceComponent implements OnInit, AfterViewInit {
+
   @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
-  
+  @ViewChild('chartBarrasCanvas') chartBarrasCanvas!: ElementRef<HTMLCanvasElement>;
+
   filtrosForm: FormGroup;
   balance: Balance = { total_ingresos: 0, total_gastos: 0, balance_neto: 0 };
   detalleIngresos: DetalleConcepto[] = [];
   detalleGastos: DetalleConcepto[] = [];
+  totalesPorDia: TotalPorDia[] = [];
+  categoriaIngresos: TotalPorCategoria[] = [];
+  categoriaGastos: TotalPorCategoria[] = [];
   loading = false;
   circuloId: number = 0;
   chart: Chart | null = null;
-
+  chartBarras: Chart | null = null;
+  datosGraficoCategoria: GraficoCategoria[] = [];
   anios: number[] = [];
   meses = [
     { value: 1, nombre: 'Enero' },
@@ -91,7 +104,29 @@ export class BalanceComponent implements OnInit, AfterViewInit {
       }
     });
 
-    // Cargar detalle
+    // Cargar totales por día
+    this.movimientosService.getTotalesPorDia(this.circuloId, anio, mes).subscribe({
+      next: (response) => {
+        this.totalesPorDia = response.data.totales;
+      },
+      error: (error) => {
+        console.error('Error cargando totales por día:', error);
+      }
+    });
+
+    // Cargar totales por categoría
+    this.movimientosService.getTotalesPorCategoria(this.circuloId, anio, mes).subscribe({
+      next: (response) => {
+        const totales = response.data.totales;
+        this.categoriaIngresos = totales.filter(t => t.tipo_movimiento === 'Ingreso');
+        this.categoriaGastos = totales.filter(t => t.tipo_movimiento === 'Gasto');
+      },
+      error: (error) => {
+        console.error('Error cargando totales por categoría:', error);
+      }
+    });
+
+    // Cargar detalle por concepto
     this.movimientosService.getBalanceDetallado(this.circuloId, anio, mes).subscribe({
       next: (response) => {
         const detalle = response.data.detalle;
@@ -104,13 +139,115 @@ export class BalanceComponent implements OnInit, AfterViewInit {
         this.loading = false;
       }
     });
-
+    // Cargar datos para gráfico de barras por categoría
+    this.movimientosService.getGraficoCategoria(this.circuloId, anio, mes).subscribe({
+      next: (response: any) => {
+        this.datosGraficoCategoria = response.data.categorias;
+        setTimeout(() => this.actualizarGraficoBarras(), 200);
+      },
+      error: (error: any) => {
+        console.error('Error cargando gráfico categoría:', error);
+      }
+    });
     // Cargar evolución (solo si no hay mes seleccionado)
     if (!mes) {
       this.cargarEvolucion(anio);
     }
   }
+  actualizarGraficoBarras(): void {
+    const labels = this.datosGraficoCategoria.map(c => c.categoria_nombre);
+    const ingresos = this.datosGraficoCategoria.map(c => c.total_ingresos);
+    const gastos = this.datosGraficoCategoria.map(c => c.total_gastos);
 
+    // Destruir gráfico anterior si existe
+    if (this.chartBarras) {
+      this.chartBarras.destroy();
+    }
+
+    setTimeout(() => {
+      if (this.chartBarrasCanvas && this.chartBarrasCanvas.nativeElement) {
+        const ctx = this.chartBarrasCanvas.nativeElement.getContext('2d');
+
+        if (ctx) {
+          this.chartBarras = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: 'Ingresos',
+                  data: ingresos,
+                  backgroundColor: 'rgba(76, 175, 80, 0.8)',
+                  borderColor: '#4caf50',
+                  borderWidth: 1
+                },
+                {
+                  label: 'Gastos',
+                  data: gastos,
+                  backgroundColor: 'rgba(244, 67, 54, 0.8)',
+                  borderColor: '#f44336',
+                  borderWidth: 1
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  display: true,
+                  position: 'top'
+                },
+                tooltip: {
+                  callbacks: {
+                    label: (context) => {
+                      let label = context.dataset.label || '';
+                      if (label) {
+                        label += ': ';
+                      }
+                      const value = context.parsed.y;
+                      // NULL CHECK AGREGADO
+                      if (value === null || value === undefined) {
+                        return label + '$0';
+                      }
+                      if (value >= 1000000) {
+                        label += '$' + (value / 1000000).toFixed(1) + 'M';
+                      } else if (value >= 1000) {
+                        label += '$' + (value / 1000).toFixed(0) + 'K';
+                      } else {
+                        label += '$' + value.toLocaleString('es-CO');
+                      }
+                      return label;
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  display: true
+                },
+                y: {
+                  display: true,
+                  beginAtZero: true,
+                  ticks: {
+                    callback: (value) => {
+                      const numValue = Number(value);
+                      if (numValue >= 1000000) {
+                        return '$' + (numValue / 1000000).toFixed(1) + 'M';
+                      } else if (numValue >= 1000) {
+                        return '$' + (numValue / 1000).toFixed(0) + 'K';
+                      }
+                      return '$' + numValue.toLocaleString('es-CO');
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+      }
+    }, 100);
+  }
   cargarEvolucion(anio: number): void {
     this.movimientosService.getEvolucion(this.circuloId, anio).subscribe({
       next: (response) => {
@@ -137,7 +274,7 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     setTimeout(() => {
       if (this.chartCanvas && this.chartCanvas.nativeElement) {
         const ctx = this.chartCanvas.nativeElement.getContext('2d');
-        
+
         if (ctx) {
           this.chart = new Chart(ctx, {
             type: 'line',

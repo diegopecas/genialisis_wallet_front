@@ -2,7 +2,7 @@
   <!-- FILTROS -->
   <div class="filters-card">
     <h2 class="filters-title">📊 Filtros</h2>
-    
+
     <form [formGroup]="filtrosForm" class="filters-form">
       <div class="form-row">
         <div class="form-group">
@@ -11,7 +11,7 @@
             <option *ngFor="let anio of anios" [value]="anio">{{ anio }}</option>
           </select>
         </div>
-        
+
         <div class="form-group">
           <label class="form-label">Mes</label>
           <select formControlName="mes" class="form-select">
@@ -22,30 +22,81 @@
       </div>
     </form>
   </div>
-
   <!-- CARDS DE BALANCE -->
   <div class="balance-cards">
     <div class="balance-card income">
       <div class="balance-label">💰 Total Ingresos</div>
       <div class="balance-value">{{ formatearValor(balance.total_ingresos) }}</div>
     </div>
-    
+
     <div class="balance-card expense">
       <div class="balance-label">💸 Total Gastos</div>
       <div class="balance-value">{{ formatearValor(balance.total_gastos) }}</div>
     </div>
-    
+
     <div class="balance-card net" [class.negative]="balance.balance_neto < 0">
       <div class="balance-label">🎯 Balance Neto</div>
       <div class="balance-value">{{ formatearValor(balance.balance_neto) }}</div>
     </div>
   </div>
+  <!-- TOTALES POR DÍA -->
+  <div class="totales-dia-section" *ngIf="!loading && totalesPorDia.length > 0">
+    <h3 class="section-title">📅 Totales por Día</h3>
 
-  <!-- GRÁFICO -->
-  <div class="chart-card" *ngIf="mostrarGrafico && !loading">
-    <h3 class="chart-title">📈 Evolución Mensual</h3>
-    <div class="chart-container">
-      <canvas #chartCanvas></canvas>
+    <div class="dia-item" *ngFor="let dia of totalesPorDia">
+      <div class="dia-fecha">
+        <span class="fecha-icon">📅</span>
+        <span class="fecha-text">{{ dia.fecha | date:'dd/MM/yyyy' }}</span>
+      </div>
+      <div class="dia-totales">
+        <div class="dia-total income">
+          <span class="total-label">💰</span>
+          <span class="total-value">{{ formatearValor(dia.total_ingresos) }}</span>
+          <span class="total-count">({{ dia.cantidad_ingresos }})</span>
+        </div>
+        <div class="dia-total expense">
+          <span class="total-label">💸</span>
+          <span class="total-value">{{ formatearValor(dia.total_gastos) }}</span>
+          <span class="total-count">({{ dia.cantidad_gastos }})</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOTALES POR CATEGORÍA -->
+  <div class="totales-categoria-section" *ngIf="!loading">
+    <!-- INGRESOS -->
+    <div class="categoria-card" *ngIf="categoriaIngresos.length > 0">
+      <h3 class="categoria-title income">💰 Ingresos por Categoría</h3>
+      <div class="categoria-list">
+        <div class="categoria-item" *ngFor="let cat of categoriaIngresos">
+          <div class="categoria-info">
+            <span class="categoria-icon">{{ cat.categoria_icono }}</span>
+            <div class="categoria-text">
+              <div class="categoria-name">{{ cat.categoria_nombre }}</div>
+              <div class="categoria-count">{{ cat.cantidad }} movimiento(s)</div>
+            </div>
+          </div>
+          <div class="categoria-value income">{{ formatearValor(cat.total) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GASTOS -->
+    <div class="categoria-card" *ngIf="categoriaGastos.length > 0">
+      <h3 class="categoria-title expense">💸 Gastos por Categoría</h3>
+      <div class="categoria-list">
+        <div class="categoria-item" *ngFor="let cat of categoriaGastos">
+          <div class="categoria-info">
+            <span class="categoria-icon">{{ cat.categoria_icono }}</span>
+            <div class="categoria-text">
+              <div class="categoria-name">{{ cat.categoria_nombre }}</div>
+              <div class="categoria-count">{{ cat.cantidad }} movimiento(s)</div>
+            </div>
+          </div>
+          <div class="categoria-value expense">{{ formatearValor(cat.total) }}</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -53,13 +104,14 @@
   <div class="detail-section" *ngIf="!loading">
     <!-- INGRESOS -->
     <div class="detail-card" *ngIf="detalleIngresos.length > 0">
-      <h3 class="detail-title income">💰 Detalle Ingresos</h3>
+      <h3 class="detail-title income">💰 Detalle Ingresos por Concepto</h3>
       <div class="detail-list">
         <div class="detail-item" *ngFor="let detalle of detalleIngresos">
           <div class="detail-info">
             <span class="detail-icon">{{ detalle.concepto_icono }}</span>
             <div class="detail-text">
               <div class="detail-name">{{ detalle.concepto_nombre }}</div>
+              <div class="detail-categoria">{{ detalle.categoria_nombre }}</div>
               <div class="detail-count">{{ detalle.cantidad }} movimiento(s)</div>
             </div>
           </div>
@@ -70,13 +122,14 @@
 
     <!-- GASTOS -->
     <div class="detail-card" *ngIf="detalleGastos.length > 0">
-      <h3 class="detail-title expense">💸 Detalle Gastos</h3>
+      <h3 class="detail-title expense">💸 Detalle Gastos por Concepto</h3>
       <div class="detail-list">
         <div class="detail-item" *ngFor="let detalle of detalleGastos">
           <div class="detail-info">
             <span class="detail-icon">{{ detalle.concepto_icono }}</span>
             <div class="detail-text">
               <div class="detail-name">{{ detalle.concepto_nombre }}</div>
+              <div class="detail-categoria">{{ detalle.categoria_nombre }}</div>
               <div class="detail-count">{{ detalle.cantidad }} movimiento(s)</div>
             </div>
           </div>
@@ -85,6 +138,22 @@
       </div>
     </div>
   </div>
+
+  <!-- GRÁFICO -->
+  <div class="chart-card" *ngIf="mostrarGrafico && !loading">
+    <h3 class="chart-title">📈 Evolución Mensual</h3>
+    <div class="chart-container">
+      <canvas #chartCanvas></canvas>
+    </div>
+  </div>
+  <!-- GRÁFICO DE BARRAS POR CATEGORÍA -->
+  <div class="chart-card" *ngIf="!loading && datosGraficoCategoria.length > 0">
+    <h3 class="chart-title">📊 Ingresos y Gastos por Categoría</h3>
+    <div class="chart-container">
+      <canvas #chartBarrasCanvas></canvas>
+    </div>
+  </div>
+
 
   <!-- LOADING -->
   <div *ngIf="loading" class="loading-message">Cargando datos...</div>
