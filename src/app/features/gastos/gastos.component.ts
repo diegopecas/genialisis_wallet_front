@@ -44,8 +44,24 @@ export class GastosComponent implements OnInit {
       valor: ['', [Validators.required, Validators.min(1)]],
       detalle: [''],
       concepto_id: ['', Validators.required],
-      fecha: [new Date().toISOString().split('T')[0], Validators.required]
+      fecha: [this.obtenerFechaLocal(), Validators.required]
     });
+  }
+
+  /**
+   * Obtiene la fecha actual en zona horaria de Colombia
+   * Usa el timezone correcto para evitar problemas de adelanto de fecha
+   */
+  private obtenerFechaLocal(): string {
+    const now = new Date();
+    // Crear fecha en zona horaria de Colombia (America/Bogota)
+    const colombiaTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+
+    const year = colombiaTime.getFullYear();
+    const month = String(colombiaTime.getMonth() + 1).padStart(2, '0');
+    const day = String(colombiaTime.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 
   ngOnInit(): void {
@@ -139,7 +155,7 @@ export class GastosComponent implements OnInit {
         next: (response: any) => {
           if (response.success) {
             this.gastoForm.reset({
-              fecha: new Date().toISOString().split('T')[0]
+              fecha: this.obtenerFechaLocal()
             });
             this.limpiarSeleccion();
             this.limpiarValorFormateado();
