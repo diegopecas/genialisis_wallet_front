@@ -1,10 +1,12 @@
 /**
  * MovimientosService
  * Servicio para CRUD de movimientos y consultas de balance
+ * Compatible con versiones con y sin el endpoint de saldo anterior
  */
 
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import {
   CreateMovimientoRequest,
@@ -15,7 +17,8 @@ import {
   EvolucionResponse,
   TotalesPorDiaResponse,
   TotalesPorCategoriaResponse,
-  GraficoCategoriaResponse
+  GraficoCategoriaResponse,
+  SaldoAnteriorResponse
 } from '../models/movimiento.model';
 
 @Injectable({
@@ -23,7 +26,7 @@ import {
 })
 export class MovimientosService {
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService) { }
 
   /**
    * Crear nuevo movimiento
@@ -49,7 +52,7 @@ export class MovimientosService {
     limit: number = 10
   ): Observable<MovimientosResponse> {
     const params: any = { limit };
-    
+
     if (tipoMovId) params.tipo_mov_id = tipoMovId;
     if (circuloId) params.circulo_id = circuloId;
     if (anio) params.anio = anio;
@@ -81,12 +84,55 @@ export class MovimientosService {
     mes?: number
   ): Observable<BalanceResponse> {
     const params: any = {};
-    
+
     if (circuloId) params.circulo_id = circuloId;
     if (anio) params.anio = anio;
     if (mes) params.mes = mes;
 
     return this.apiService.get<BalanceResponse>('movimientos/balance', params);
+  }
+
+  /**
+   * Obtener saldo del mes anterior
+   * NOTA: Este método retorna un observable vacío si el endpoint no existe
+   */
+
+  getSaldoAnterior(
+    circuloId?: number,
+    anio?: number,
+    mes?: number
+  ): Observable<SaldoAnteriorResponse> {
+    const params: any = {};
+    if (circuloId) params.circulo_id = circuloId;
+    if (anio) params.anio = anio;
+    if (mes) params.mes = mes;
+
+    return this.apiService.get<SaldoAnteriorResponse>('movimientos/saldo/anterior', params)
+      .pipe(
+        tap(response => {
+        }),
+        catchError((error) => {
+          // IMPRIMIR EL ERROR REAL
+          console.error("getSaldoAnterior - ERROR REAL:", error);
+          console.error("Status:", error.status);
+          console.error("Error body:", error.error);
+          console.error("Message:", error.message);
+
+          // Retornar respuesta por defecto
+          return of({
+            success: false,
+            message: 'Endpoint no disponible',
+            data: {
+              saldo_mes_anterior: {
+                fecha_corte: '',
+                total_ingresos_acumulados: 0,
+                total_gastos_acumulados: 0,
+                saldo_anterior: 0
+              }
+            }
+          });
+        })
+      );
   }
 
   /**
@@ -98,7 +144,7 @@ export class MovimientosService {
     mes?: number
   ): Observable<BalanceDetalladoResponse> {
     const params: any = {};
-    
+
     if (circuloId) params.circulo_id = circuloId;
     if (anio) params.anio = anio;
     if (mes) params.mes = mes;
@@ -114,7 +160,7 @@ export class MovimientosService {
     anio?: number
   ): Observable<EvolucionResponse> {
     const params: any = {};
-    
+
     if (circuloId) params.circulo_id = circuloId;
     if (anio) params.anio = anio;
 
@@ -130,7 +176,7 @@ export class MovimientosService {
     mes?: number
   ): Observable<TotalesPorDiaResponse> {
     const params: any = {};
-    
+
     if (circuloId) params.circulo_id = circuloId;
     if (anio) params.anio = anio;
     if (mes) params.mes = mes;
@@ -147,7 +193,7 @@ export class MovimientosService {
     mes?: number
   ): Observable<TotalesPorCategoriaResponse> {
     const params: any = {};
-    
+
     if (circuloId) params.circulo_id = circuloId;
     if (anio) params.anio = anio;
     if (mes) params.mes = mes;
@@ -164,7 +210,7 @@ export class MovimientosService {
     mes?: number
   ): Observable<GraficoCategoriaResponse> {
     const params: any = { circulo_id: circuloId };
-    
+
     if (anio) params.anio = anio;
     if (mes) params.mes = mes;
 

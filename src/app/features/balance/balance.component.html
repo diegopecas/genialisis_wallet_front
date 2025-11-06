@@ -23,21 +23,50 @@
     </form>
   </div>
   
-  <!-- CARDS DE BALANCE -->
-  <div class="balance-cards">
-    <div class="balance-card income">
-      <div class="balance-label">💰 Total Ingresos</div>
-      <div class="balance-value">{{ formatearValor(balance.total_ingresos) }}</div>
+  <!-- CARDS DE BALANCE PRINCIPAL -->
+  <div class="balance-summary-card">
+    <h2 class="balance-summary-title">💼 Resumen del Período: {{ periodoTexto }}</h2>
+    
+    <!-- Primera fila: Saldo anterior y movimientos del período -->
+    <div class="balance-cards">
+      <div class="balance-card previous">
+        <div class="balance-label">💼 Saldo Anterior</div>
+        <div class="balance-value" [class.negative]="(balance.saldo_anterior || 0) < 0">
+          {{ formatearValor(balance.saldo_anterior || 0) }}
+        </div>
+        <div class="balance-sublabel" *ngIf="saldoAnteriorData">
+          Acumulado hasta {{ saldoAnteriorData.fecha_corte | date:'dd/MM/yyyy' }}
+        </div>
+      </div>
+
+      <div class="balance-card income">
+        <div class="balance-label">💰 Ingresos del Período</div>
+        <div class="balance-value">{{ formatearValor(balance.total_ingresos) }}</div>
+      </div>
+
+      <div class="balance-card expense">
+        <div class="balance-label">💸 Gastos del Período</div>
+        <div class="balance-value">{{ formatearValor(balance.total_gastos) }}</div>
+      </div>
     </div>
 
-    <div class="balance-card expense">
-      <div class="balance-label">💸 Total Gastos</div>
-      <div class="balance-value">{{ formatearValor(balance.total_gastos) }}</div>
-    </div>
+    <!-- Segunda fila: Balance neto y saldo final -->
+    <div class="balance-cards-bottom">
+      <div class="balance-card net" [class.negative]="balance.balance_neto < 0">
+        <div class="balance-label">🎯 Balance Neto del Período</div>
+        <div class="balance-value">{{ formatearValor(balance.balance_neto) }}</div>
+        <div class="balance-sublabel">
+          {{ balance.balance_neto >= 0 ? 'Superávit' : 'Déficit' }} del período
+        </div>
+      </div>
 
-    <div class="balance-card net" [class.negative]="balance.balance_neto < 0">
-      <div class="balance-label">🎯 Balance Neto</div>
-      <div class="balance-value">{{ formatearValor(balance.balance_neto) }}</div>
+      <div class="balance-card final" [class.negative]="(balance.saldo_final || 0) < 0">
+        <div class="balance-label">💎 Saldo Final</div>
+        <div class="balance-value">{{ formatearValor(balance.saldo_final || 0) }}</div>
+        <div class="balance-sublabel">
+          Saldo anterior + Balance neto
+        </div>
+      </div>
     </div>
   </div>
   

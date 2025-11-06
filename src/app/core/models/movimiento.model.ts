@@ -1,5 +1,5 @@
 /**
- * Modelo: Movimiento
+ * Modelo: Movimiento con campos de saldo no opcionales
  */
 
 export interface Movimiento {
@@ -50,16 +50,34 @@ export interface MovimientoResponse {
   data: Movimiento;
 }
 
+// Balance con campos obligatorios (no opcionales)
 export interface Balance {
   total_ingresos: number;
   total_gastos: number;
   balance_neto: number;
+  saldo_anterior: number;  // Ahora es obligatorio
+  saldo_final: number;     // Ahora es obligatorio
 }
 
 export interface BalanceResponse {
   success: boolean;
   message: string;
   data: Balance;
+}
+
+export interface SaldoAnterior {
+  fecha_corte: string;
+  total_ingresos_acumulados: number;
+  total_gastos_acumulados: number;
+  saldo_anterior: number;
+}
+
+export interface SaldoAnteriorResponse {
+  success: boolean;
+  message: string;
+  data: {
+    saldo_mes_anterior: SaldoAnterior;
+  };
 }
 
 export interface DetalleConcepto {
@@ -95,6 +113,25 @@ export interface EvolucionResponse {
     datos: EvolucionMes[];
   };
 }
+
+export interface EvolucionDia {
+  dia: number;
+  fecha: string;
+  ingresos: number;
+  gastos: number;
+  balance: number;
+  saldo_acumulado: number;
+}
+
+export interface EvolucionDiariaResponse {
+  success: boolean;
+  message: string;
+  data: {
+    saldo_inicial: number;
+    datos: EvolucionDia[];
+  };
+}
+
 export interface TotalPorDia {
   fecha: string;
   total_ingresos: number;
@@ -128,6 +165,7 @@ export interface TotalesPorCategoriaResponse {
     totales: TotalPorCategoria[];
   };
 }
+
 export interface GraficoCategoria {
   categoria_id: number;
   categoria_nombre: string;

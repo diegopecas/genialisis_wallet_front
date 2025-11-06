@@ -1,3 +1,7 @@
+/**
+ * BalanceComponent
+ * Balance con saldo anterior acumulado correctamente
+ */
 
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -11,7 +15,8 @@ import {
   EvolucionMes,
   TotalPorDia,
   TotalPorCategoria,
-  GraficoCategoria
+  GraficoCategoria,
+  SaldoAnterior
 } from '../../core/models/movimiento.model';
 
 Chart.register(...registerables);
@@ -29,7 +34,14 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   @ViewChild('chartBarrasCanvas') chartBarrasCanvas!: ElementRef<HTMLCanvasElement>;
 
   filtrosForm!: FormGroup;
-  balance: Balance = { total_ingresos: 0, total_gastos: 0, balance_neto: 0 };
+  balance: Balance = { 
+    total_ingresos: 0, 
+    total_gastos: 0, 
+    balance_neto: 0,
+    saldo_anterior: 0,
+    saldo_final: 0
+  };
+  saldoAnteriorData: SaldoAnterior | null = null;
   detalleIngresos: DetalleConcepto[] = [];
   detalleGastos: DetalleConcepto[] = [];
   totalesPorDia: TotalPorDia[] = [];
@@ -64,12 +76,16 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     const circulo = this.authService.getPrimerCirculo();
     this.circuloId = circulo?.id || 0;
 
-    const anioActual = new Date().getFullYear();
+    const fechaActual = new Date();
+    const anioActual = fechaActual.getFullYear();
+    const mesActual = fechaActual.getMonth() + 1; // getMonth() retorna 0-11, necesitamos 1-12
+    
     this.anios = [anioActual, anioActual - 1, anioActual - 2];
 
+    // CAMBIO IMPORTANTE: Inicializar con el mes actual, no con null
     this.filtrosForm = this.fb.group({
       anio: [anioActual],
-      mes: [null]
+      mes: [mesActual]  // Cambiado de null a mesActual
     });
   }
 
@@ -97,16 +113,57 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     this.detalleIngresos = [];
     this.detalleGastos = [];
     this.datosGraficoCategoria = [];
+    this.saldoAnteriorData = null;
 
-    // Cargar balance
-    this.movimientosService.getBalance(this.circuloId, anio, mes).subscribe({
-      next: (response) => {
-        this.balance = response?.data || { total_ingresos: 0, total_gastos: 0, balance_neto: 0 };
-      },
-      error: (error) => {
-        console.error('Error cargando balance:', error);
-        this.balance = { total_ingresos: 0, total_gastos: 0, balance_neto: 0 };
-      }
+    // IMPORTANTE: Cargar saldo anterior y balance en paralelo
+    Promise.all([
+      // Cargar saldo anterior
+      new Promise<void>((resolve) => {
+        this.movimientosService.getSaldoAnterior(this.circuloId, anio, mes).subscribe({
+          next: (response) => {
+            if (response?.data?.saldo_mes_anterior) {
+              this.saldoAnteriorData = response.data.saldo_mes_anterior;
+              this.balance.saldo_anterior = this.saldoAnteriorData.saldo_anterior || 0;
+            } else {
+              this.balance.saldo_anterior = 0;
+            }
+            resolve();
+          },
+          error: (error) => {
+            console.log('Nota: El endpoint de saldo anterior no está disponible');
+            this.balance.saldo_anterior = 0;
+            resolve();
+          }
+        });
+      }),
+      // Cargar balance del período
+      new Promise<void>((resolve) => {
+        this.movimientosService.getBalance(this.circuloId, anio, mes).subscribe({
+          next: (response) => {
+            const balanceData = response?.data || { 
+              total_ingresos: 0, 
+              total_gastos: 0, 
+              balance_neto: 0 
+            };
+            
+            this.balance.total_ingresos = balanceData.total_ingresos;
+            this.balance.total_gastos = balanceData.total_gastos;
+            this.balance.balance_neto = balanceData.balance_neto;
+            resolve();
+          },
+          error: (error) => {
+            console.error('Error cargando balance:', error);
+            this.balance.total_ingresos = 0;
+            this.balance.total_gastos = 0;
+            this.balance.balance_neto = 0;
+            resolve();
+          }
+        });
+      })
+    ]).then(() => {
+      // Calcular saldo final después de que ambas promesas se resuelvan
+      this.balance.saldo_final = (+this.balance.saldo_anterior) + (+this.balance.balance_neto);
+      
     });
 
     // Cargar totales por día
@@ -226,7 +283,6 @@ export class BalanceComponent implements OnInit, AfterViewInit {
                         label += ': ';
                       }
                       const value = context.parsed.y;
-                      // NULL CHECK AGREGADO
                       if (value === null || value === undefined) {
                         return label + '$0';
                       }
@@ -399,5 +455,17 @@ export class BalanceComponent implements OnInit, AfterViewInit {
 
   get mostrarGrafico(): boolean {
     return !this.filtrosForm.value.mes;
+  }
+
+  get periodoTexto(): string {
+    const anio = this.filtrosForm.value.anio;
+    const mes = this.filtrosForm.value.mes;
+    
+    if (mes) {
+      const mesNombre = this.meses.find(m => m.value === mes)?.nombre || '';
+      return `${mesNombre} ${anio}`;
+    }
+    
+    return `Año ${anio}`;
   }
 }
