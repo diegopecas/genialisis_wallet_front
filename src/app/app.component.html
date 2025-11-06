@@ -16,17 +16,17 @@
   <div class="tabs-container">
     <button 
       class="tab-btn" 
-      [class.active]="activeTab === 'ingresos'"
-      (click)="changeTab('ingresos')">
-      <span class="tab-icon">💰</span>
-      <span>Ingresos</span>
-    </button>
-    <button 
-      class="tab-btn" 
       [class.active]="activeTab === 'gastos'"
       (click)="changeTab('gastos')">
       <span class="tab-icon">💸</span>
       <span>Gastos</span>
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'ingresos'"
+      (click)="changeTab('ingresos')">
+      <span class="tab-icon">💰</span>
+      <span>Ingresos</span>
     </button>
     <button 
       class="tab-btn" 

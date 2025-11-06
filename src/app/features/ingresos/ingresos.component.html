@@ -16,7 +16,13 @@
       <!-- VALOR -->
       <div class="form-group">
         <label class="form-label">Valor</label>
-        <input type="number" formControlName="valor" class="form-input" placeholder="Ej: 50000" />
+        <input 
+          type="text" 
+          [value]="valorFormateado" 
+          (input)="formatearValorInput($event)" 
+          class="form-input" 
+          placeholder="Ej: 50.000" 
+        />
         <div class="form-error" *ngIf="ingresoForm.get('valor')?.invalid && ingresoForm.get('valor')?.touched">
           Valor es requerido
         </div>

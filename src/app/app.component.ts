@@ -20,7 +20,7 @@ export class AppComponent implements OnInit {
   title = 'Circle Finance';
   currentUser: Usuario | null = null;
   currentCirculo: Circulo | null = null;
-  activeTab = 'ingresos';
+  activeTab = 'gastos';
 
   constructor(
     private authService: AuthService,

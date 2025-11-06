@@ -15,7 +15,13 @@
       <!-- VALOR -->
       <div class="form-group">
         <label class="form-label">Valor</label>
-        <input type="number" formControlName="valor" class="form-input" placeholder="Ej: 50000" />
+        <input 
+          type="text" 
+          [value]="valorFormateado" 
+          (input)="formatearValorInput($event)" 
+          class="form-input" 
+          placeholder="Ej: 50.000" 
+        />
         <div class="form-error" *ngIf="gastoForm.get('valor')?.invalid && gastoForm.get('valor')?.touched">
           Valor es requerido
         </div>
@@ -36,6 +42,7 @@
           <span class="selected-icon">{{ conceptoSeleccionado.icono }}</span>
           <div class="selected-text">
             <div class="selected-name">{{ conceptoSeleccionado.nombre }}</div>
+            <div class="selected-categoria">{{ categoriaSeleccionada }}</div>
           </div>
         </div>
         <button type="button" class="clear-btn" (click)="limpiarSeleccion()">

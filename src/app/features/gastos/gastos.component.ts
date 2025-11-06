@@ -29,6 +29,7 @@ export class GastosComponent implements OnInit {
   loading = false;
   circuloId: number = 0;
   gastos: any[] = [];
+  valorFormateado: string = '';
 
   constructor(
     private fb: FormBuilder,
@@ -141,6 +142,7 @@ export class GastosComponent implements OnInit {
               fecha: new Date().toISOString().split('T')[0]
             });
             this.limpiarSeleccion();
+            this.limpiarValorFormateado();
             this.cargarGastos();
           }
           this.loading = false;
@@ -176,5 +178,25 @@ export class GastosComponent implements OnInit {
 
   get requiereDetalle(): boolean {
     return this.conceptoSeleccionado?.requiere_detalle || false;
+  }
+
+  formatearValorInput(event: any): void {
+    let valor = event.target.value.replace(/\D/g, ''); // Solo dígitos
+    
+    if (valor === '') {
+      this.valorFormateado = '';
+      this.gastoForm.patchValue({ valor: '' });
+      return;
+    }
+
+    // Formatear con separador de miles
+    this.valorFormateado = Number(valor).toLocaleString('es-CO');
+    
+    // Actualizar el valor real en el formulario (sin formato)
+    this.gastoForm.patchValue({ valor: Number(valor) }, { emitEvent: false });
+  }
+
+  limpiarValorFormateado(): void {
+    this.valorFormateado = '';
   }
 }
