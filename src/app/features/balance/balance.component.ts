@@ -1,7 +1,3 @@
-/**
- * BalanceComponent
- * Balance con filtros, estadísticas y gráfico de evolución
- */
 
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -32,7 +28,7 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('chartBarrasCanvas') chartBarrasCanvas!: ElementRef<HTMLCanvasElement>;
 
-  filtrosForm: FormGroup;
+  filtrosForm!: FormGroup;
   balance: Balance = { total_ingresos: 0, total_gastos: 0, balance_neto: 0 };
   detalleIngresos: DetalleConcepto[] = [];
   detalleGastos: DetalleConcepto[] = [];
@@ -94,67 +90,91 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     const anio = this.filtrosForm.value.anio;
     const mes = this.filtrosForm.value.mes;
 
+    // Inicializar arrays por si las respuestas fallan
+    this.totalesPorDia = [];
+    this.categoriaIngresos = [];
+    this.categoriaGastos = [];
+    this.detalleIngresos = [];
+    this.detalleGastos = [];
+    this.datosGraficoCategoria = [];
+
     // Cargar balance
     this.movimientosService.getBalance(this.circuloId, anio, mes).subscribe({
       next: (response) => {
-        this.balance = response.data;
+        this.balance = response?.data || { total_ingresos: 0, total_gastos: 0, balance_neto: 0 };
       },
       error: (error) => {
         console.error('Error cargando balance:', error);
+        this.balance = { total_ingresos: 0, total_gastos: 0, balance_neto: 0 };
       }
     });
 
     // Cargar totales por día
     this.movimientosService.getTotalesPorDia(this.circuloId, anio, mes).subscribe({
       next: (response) => {
-        this.totalesPorDia = response.data.totales;
+        this.totalesPorDia = response?.data?.totales || [];
       },
       error: (error) => {
         console.error('Error cargando totales por día:', error);
+        this.totalesPorDia = [];
       }
     });
 
     // Cargar totales por categoría
     this.movimientosService.getTotalesPorCategoria(this.circuloId, anio, mes).subscribe({
       next: (response) => {
-        const totales = response.data.totales;
-        this.categoriaIngresos = totales.filter(t => t.tipo_movimiento === 'Ingreso');
-        this.categoriaGastos = totales.filter(t => t.tipo_movimiento === 'Gasto');
+        const totales = response?.data?.totales || [];
+        this.categoriaIngresos = totales.filter(t => t.tipo_movimiento === 'Ingreso') || [];
+        this.categoriaGastos = totales.filter(t => t.tipo_movimiento === 'Gasto') || [];
       },
       error: (error) => {
         console.error('Error cargando totales por categoría:', error);
+        this.categoriaIngresos = [];
+        this.categoriaGastos = [];
       }
     });
 
     // Cargar detalle por concepto
     this.movimientosService.getBalanceDetallado(this.circuloId, anio, mes).subscribe({
       next: (response) => {
-        const detalle = response.data.detalle;
-        this.detalleIngresos = detalle.filter(d => d.tipo_movimiento === 'Ingreso');
-        this.detalleGastos = detalle.filter(d => d.tipo_movimiento === 'Gasto');
+        const detalle = response?.data?.detalle || [];
+        this.detalleIngresos = detalle.filter(d => d.tipo_movimiento === 'Ingreso') || [];
+        this.detalleGastos = detalle.filter(d => d.tipo_movimiento === 'Gasto') || [];
         this.loading = false;
       },
       error: (error) => {
         console.error('Error cargando detalle:', error);
+        this.detalleIngresos = [];
+        this.detalleGastos = [];
         this.loading = false;
       }
     });
+    
     // Cargar datos para gráfico de barras por categoría
     this.movimientosService.getGraficoCategoria(this.circuloId, anio, mes).subscribe({
       next: (response: any) => {
-        this.datosGraficoCategoria = response.data.categorias;
-        setTimeout(() => this.actualizarGraficoBarras(), 200);
+        this.datosGraficoCategoria = response?.data?.categorias || [];
+        if (this.datosGraficoCategoria && this.datosGraficoCategoria.length > 0) {
+          setTimeout(() => this.actualizarGraficoBarras(), 200);
+        }
       },
       error: (error: any) => {
         console.error('Error cargando gráfico categoría:', error);
+        this.datosGraficoCategoria = [];
       }
     });
+    
     // Cargar evolución (solo si no hay mes seleccionado)
     if (!mes) {
       this.cargarEvolucion(anio);
     }
   }
+  
   actualizarGraficoBarras(): void {
+    if (!this.datosGraficoCategoria || this.datosGraficoCategoria.length === 0) {
+      return;
+    }
+    
     const labels = this.datosGraficoCategoria.map(c => c.categoria_nombre);
     const ingresos = this.datosGraficoCategoria.map(c => c.total_ingresos);
     const gastos = this.datosGraficoCategoria.map(c => c.total_gastos);
@@ -248,11 +268,14 @@ export class BalanceComponent implements OnInit, AfterViewInit {
       }
     }, 100);
   }
+  
   cargarEvolucion(anio: number): void {
     this.movimientosService.getEvolucion(this.circuloId, anio).subscribe({
       next: (response) => {
-        const datos = response.data.datos;
-        this.actualizarGrafico(datos);
+        const datos = response?.data?.datos || [];
+        if (datos.length > 0) {
+          this.actualizarGrafico(datos);
+        }
       },
       error: (error) => {
         console.error('Error cargando evolución:', error);
@@ -261,6 +284,10 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   }
 
   actualizarGrafico(datos: EvolucionMes[]): void {
+    if (!datos || datos.length === 0) {
+      return;
+    }
+    
     const labels = datos.map(d => d.mes_nombre);
     const ingresos = datos.map(d => d.ingresos);
     const gastos = datos.map(d => d.gastos);

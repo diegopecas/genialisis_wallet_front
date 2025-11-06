@@ -22,6 +22,7 @@
       </div>
     </form>
   </div>
+  
   <!-- CARDS DE BALANCE -->
   <div class="balance-cards">
     <div class="balance-card income">
@@ -39,8 +40,9 @@
       <div class="balance-value">{{ formatearValor(balance.balance_neto) }}</div>
     </div>
   </div>
+  
   <!-- TOTALES POR DÍA -->
-  <div class="totales-dia-section" *ngIf="!loading && totalesPorDia.length > 0">
+  <div class="totales-dia-section" *ngIf="!loading && totalesPorDia && totalesPorDia.length > 0">
     <h3 class="section-title">📅 Totales por Día</h3>
 
     <div class="dia-item" *ngFor="let dia of totalesPorDia">
@@ -66,7 +68,7 @@
   <!-- TOTALES POR CATEGORÍA -->
   <div class="totales-categoria-section" *ngIf="!loading">
     <!-- INGRESOS -->
-    <div class="categoria-card" *ngIf="categoriaIngresos.length > 0">
+    <div class="categoria-card" *ngIf="categoriaIngresos && categoriaIngresos.length > 0">
       <h3 class="categoria-title income">💰 Ingresos por Categoría</h3>
       <div class="categoria-list">
         <div class="categoria-item" *ngFor="let cat of categoriaIngresos">
@@ -83,7 +85,7 @@
     </div>
 
     <!-- GASTOS -->
-    <div class="categoria-card" *ngIf="categoriaGastos.length > 0">
+    <div class="categoria-card" *ngIf="categoriaGastos && categoriaGastos.length > 0">
       <h3 class="categoria-title expense">💸 Gastos por Categoría</h3>
       <div class="categoria-list">
         <div class="categoria-item" *ngFor="let cat of categoriaGastos">
@@ -103,7 +105,7 @@
   <!-- DETALLE POR CONCEPTO -->
   <div class="detail-section" *ngIf="!loading">
     <!-- INGRESOS -->
-    <div class="detail-card" *ngIf="detalleIngresos.length > 0">
+    <div class="detail-card" *ngIf="detalleIngresos && detalleIngresos.length > 0">
       <h3 class="detail-title income">💰 Detalle Ingresos por Concepto</h3>
       <div class="detail-list">
         <div class="detail-item" *ngFor="let detalle of detalleIngresos">
@@ -121,7 +123,7 @@
     </div>
 
     <!-- GASTOS -->
-    <div class="detail-card" *ngIf="detalleGastos.length > 0">
+    <div class="detail-card" *ngIf="detalleGastos && detalleGastos.length > 0">
       <h3 class="detail-title expense">💸 Detalle Gastos por Concepto</h3>
       <div class="detail-list">
         <div class="detail-item" *ngFor="let detalle of detalleGastos">
@@ -146,14 +148,14 @@
       <canvas #chartCanvas></canvas>
     </div>
   </div>
+  
   <!-- GRÁFICO DE BARRAS POR CATEGORÍA -->
-  <div class="chart-card" *ngIf="!loading && datosGraficoCategoria.length > 0">
+  <div class="chart-card" *ngIf="!loading && datosGraficoCategoria && datosGraficoCategoria.length > 0">
     <h3 class="chart-title">📊 Ingresos y Gastos por Categoría</h3>
     <div class="chart-container">
       <canvas #chartBarrasCanvas></canvas>
     </div>
   </div>
-
 
   <!-- LOADING -->
   <div *ngIf="loading" class="loading-message">Cargando datos...</div>
