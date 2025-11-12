@@ -30,6 +30,11 @@ export class IngresosComponent implements OnInit {
   circuloId: number = 0;
   ingresos: any[] = [];
   valorFormateado: string = '';
+  
+  // Variables para paginación
+  limitePorPagina: number = 10;
+  totalRegistrosCargados: number = 0;
+  hayMasRegistros: boolean = true;
 
   constructor(
     private fb: FormBuilder,
@@ -99,14 +104,26 @@ export class IngresosComponent implements OnInit {
   }
 
   cargarIngresos(): void {
-    this.movimientosService.getMovimientos(1, this.circuloId, undefined, undefined, 10).subscribe({
+    this.movimientosService.getMovimientos(1, this.circuloId, undefined, undefined, this.limitePorPagina).subscribe({
       next: (response: any) => {
         if (response.success) {
           this.ingresos = response.data.movimientos;
+          this.totalRegistrosCargados = this.ingresos.length;
+          
+          // Si trajo menos registros que el límite, no hay más
+          this.hayMasRegistros = this.ingresos.length === this.limitePorPagina;
         }
       },
       error: (error: any) => console.error('Error cargando ingresos:', error)
     });
+  }
+
+  /**
+   * Cargar más registros (incrementa el límite en 10)
+   */
+  cargarMasIngresos(): void {
+    this.limitePorPagina += 10;
+    this.cargarIngresos();
   }
 
   buscarConceptos(event: any): void {
@@ -127,7 +144,7 @@ export class IngresosComponent implements OnInit {
     this.categoriaSeleccionada = item.categoria;
     this.ingresoForm.patchValue({ concepto_id: item.concepto.id });
 
-    // El detalle siempre será opcional
+    // El detalle SIEMPRE es opcional
     this.ingresoForm.get('detalle')?.clearValidators();
     this.ingresoForm.get('detalle')?.updateValueAndValidity();
   }
@@ -159,6 +176,9 @@ export class IngresosComponent implements OnInit {
             });
             this.limpiarSeleccion();
             this.limpiarValorFormateado();
+            
+            // Resetear paginación al crear nuevo registro
+            this.limitePorPagina = 10;
             this.cargarIngresos();
           }
           this.loading = false;
@@ -196,6 +216,9 @@ export class IngresosComponent implements OnInit {
     return this.conceptoSeleccionado?.requiere_detalle || false;
   }
 
+  /**
+   * Formatear valor del input - SOLO ACEPTA NÚMEROS
+   */
   formatearValorInput(event: any): void {
     let valor = event.target.value.replace(/\D/g, ''); // Solo dígitos
     

@@ -77,3 +77,6 @@ Deberías ver 8 archivos PNG.
 ---
 
 **Nota**: Sin estos iconos la app seguirá funcionando, pero no se podrá "instalar" en el celular. Los iconos son necesarios solo para la experiencia PWA completa.
+
+# Start Serve
+ng serve --port 4300

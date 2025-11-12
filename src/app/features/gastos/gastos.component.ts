@@ -30,6 +30,11 @@ export class GastosComponent implements OnInit {
   circuloId: number = 0;
   gastos: any[] = [];
   valorFormateado: string = '';
+  
+  // Variables para paginación
+  limitePorPagina: number = 10;
+  totalRegistrosCargados: number = 0;
+  hayMasRegistros: boolean = true;
 
   constructor(
     private fb: FormBuilder,
@@ -99,14 +104,26 @@ export class GastosComponent implements OnInit {
   }
 
   cargarGastos(): void {
-    this.movimientosService.getMovimientos(2, this.circuloId, undefined, undefined, 10).subscribe({
+    this.movimientosService.getMovimientos(2, this.circuloId, undefined, undefined, this.limitePorPagina).subscribe({
       next: (response: any) => {
         if (response.success) {
           this.gastos = response.data.movimientos;
+          this.totalRegistrosCargados = this.gastos.length;
+          
+          // Si trajo menos registros que el límite, no hay más
+          this.hayMasRegistros = this.gastos.length === this.limitePorPagina;
         }
       },
       error: (error: any) => console.error('Error cargando gastos:', error)
     });
+  }
+
+  /**
+   * Cargar más registros (incrementa el límite en 10)
+   */
+  cargarMasGastos(): void {
+    this.limitePorPagina += 10;
+    this.cargarGastos();
   }
 
   buscarConceptos(event: any): void {
@@ -127,7 +144,7 @@ export class GastosComponent implements OnInit {
     this.categoriaSeleccionada = item.categoria;
     this.gastoForm.patchValue({ concepto_id: item.concepto.id });
 
-    // El detalle siempre será opcional
+    // El detalle SIEMPRE es opcional
     this.gastoForm.get('detalle')?.clearValidators();
     this.gastoForm.get('detalle')?.updateValueAndValidity();
   }
@@ -159,6 +176,9 @@ export class GastosComponent implements OnInit {
             });
             this.limpiarSeleccion();
             this.limpiarValorFormateado();
+            
+            // Resetear paginación al crear nuevo registro
+            this.limitePorPagina = 10;
             this.cargarGastos();
           }
           this.loading = false;
@@ -196,6 +216,9 @@ export class GastosComponent implements OnInit {
     return this.conceptoSeleccionado?.requiere_detalle || false;
   }
 
+  /**
+   * Formatear valor del input - SOLO ACEPTA NÚMEROS
+   */
   formatearValorInput(event: any): void {
     let valor = event.target.value.replace(/\D/g, ''); // Solo dígitos
     

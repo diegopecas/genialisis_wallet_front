@@ -21,15 +21,16 @@
           [value]="valorFormateado" 
           (input)="formatearValorInput($event)" 
           class="form-input" 
-          placeholder="Ej: 50.000" 
+          placeholder="Ej: 50.000"
+          inputmode="numeric"
         />
         <div class="form-error" *ngIf="ingresoForm.get('valor')?.invalid && ingresoForm.get('valor')?.touched">
           Valor es requerido
         </div>
       </div>
 
-      <!-- DETALLE (debajo del valor) -->
-      <div class="form-group" *ngIf="requiereDetalle || ingresoForm.get('detalle')?.value">
+      <!-- DETALLE (siempre opcional) -->
+      <div class="form-group" *ngIf="conceptoSeleccionado">
         <label class="form-label">
           Detalle
           <span class="optional">(opcional)</span>
@@ -111,6 +112,14 @@
         <div class="movimiento-valor success">{{ formatearValor(ingreso.valor) }}</div>
       </div>
       <button class="delete-btn" (click)="eliminarIngreso(ingreso.id)">🗑️</button>
+    </div>
+
+    <!-- BOTÓN VER MÁS -->
+    <div class="ver-mas-container" *ngIf="hayMasRegistros">
+      <button class="ver-mas-btn" (click)="cargarMasIngresos()" [disabled]="loading">
+        {{ loading ? 'Cargando...' : 'Ver más registros' }}
+      </button>
+      <p class="registros-info">Mostrando {{ totalRegistrosCargados }} registros</p>
     </div>
   </div>
 
