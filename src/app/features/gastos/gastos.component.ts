@@ -47,9 +47,10 @@ export class GastosComponent implements OnInit {
     const circulo = this.authService.getPrimerCirculo();
     this.circuloId = circulo?.id || 0;
 
+    // IMPORTANTE: detalle NO tiene validadores desde el inicio
     this.gastoForm = this.fb.group({
       valor: ['', [Validators.required, Validators.min(1)]],
-      detalle: [''],
+      detalle: [''], // SIN VALIDADORES
       concepto_id: ['', Validators.required],
       fecha: [this.obtenerFechaLocal(), Validators.required]
     });
@@ -164,13 +165,24 @@ export class GastosComponent implements OnInit {
     this.categoriaSeleccionada = item.categoria;
     this.gastoForm.patchValue({ concepto_id: item.concepto.id });
 
-    // El detalle SIEMPRE es opcional - remover cualquier validador
+    // GARANTIZAR que detalle sea opcional
     const detalleControl = this.gastoForm.get('detalle');
     if (detalleControl) {
       detalleControl.clearValidators();
       detalleControl.setErrors(null);
+      detalleControl.markAsUntouched();
       detalleControl.updateValueAndValidity();
     }
+    
+    // FORZAR actualización del estado del formulario
+    this.gastoForm.updateValueAndValidity();
+    
+    console.log('✅ Concepto seleccionado - Estado formulario:', {
+      valid: this.gastoForm.valid,
+      errors: this.gastoForm.errors,
+      detalleErrors: detalleControl?.errors,
+      detalleValid: detalleControl?.valid
+    });
   }
 
   limpiarSeleccion(): void {
@@ -185,11 +197,28 @@ export class GastosComponent implements OnInit {
     if (detalleControl) {
       detalleControl.clearValidators();
       detalleControl.setErrors(null);
+      detalleControl.markAsUntouched();
       detalleControl.updateValueAndValidity();
     }
   }
 
   onSubmit(): void {
+    console.log('🔍 Intentando enviar - Estado formulario:', {
+      valid: this.gastoForm.valid,
+      value: this.gastoForm.value,
+      errors: this.gastoForm.errors
+    });
+
+    // VERIFICAR cada control
+    Object.keys(this.gastoForm.controls).forEach(key => {
+      const control = this.gastoForm.get(key);
+      console.log(`  - ${key}:`, {
+        value: control?.value,
+        valid: control?.valid,
+        errors: control?.errors
+      });
+    });
+
     if (this.gastoForm.valid) {
       this.loading = true;
 
@@ -198,9 +227,12 @@ export class GastosComponent implements OnInit {
         circulos_ids: [this.circuloId]
       };
 
+      console.log('📤 Enviando datos:', formData);
+
       this.movimientosService.create(formData).subscribe({
         next: (response: any) => {
           if (response.success) {
+            console.log('✅ Gasto creado exitosamente');
             this.gastoForm.reset({
               fecha: this.obtenerFechaLocal()
             });
@@ -214,10 +246,12 @@ export class GastosComponent implements OnInit {
           this.loading = false;
         },
         error: (error: any) => {
-          console.error('Error creando gasto:', error);
+          console.error('❌ Error creando gasto:', error);
           this.loading = false;
         }
       });
+    } else {
+      console.log('❌ Formulario inválido - no se puede enviar');
     }
   }
 
