@@ -29,6 +29,8 @@ export class IngresosComponent implements OnInit {
   loading = false;
   circuloId: number = 0;
   ingresos: any[] = [];
+  ingresosFiltrados: any[] = [];
+  searchMovimientos: string = '';
   valorFormateado: string = '';
   
   // Variables para paginación
@@ -108,6 +110,7 @@ export class IngresosComponent implements OnInit {
       next: (response: any) => {
         if (response.success) {
           this.ingresos = response.data.movimientos;
+          this.ingresosFiltrados = [...this.ingresos]; // Inicializar lista filtrada
           this.totalRegistrosCargados = this.ingresos.length;
           
           // Si trajo menos registros que el límite, no hay más
@@ -124,6 +127,23 @@ export class IngresosComponent implements OnInit {
   cargarMasIngresos(): void {
     this.limitePorPagina += 10;
     this.cargarIngresos();
+  }
+
+  /**
+   * Buscar/filtrar movimientos por concepto, categoría o detalle
+   */
+  buscarMovimientos(event: any): void {
+    this.searchMovimientos = event.target.value.toLowerCase();
+
+    if (this.searchMovimientos.trim() === '') {
+      this.ingresosFiltrados = [...this.ingresos];
+    } else {
+      this.ingresosFiltrados = this.ingresos.filter(ingreso =>
+        ingreso.concepto_nombre.toLowerCase().includes(this.searchMovimientos) ||
+        ingreso.categoria_nombre.toLowerCase().includes(this.searchMovimientos) ||
+        (ingreso.detalle && ingreso.detalle.toLowerCase().includes(this.searchMovimientos))
+      );
+    }
   }
 
   buscarConceptos(event: any): void {
@@ -144,9 +164,13 @@ export class IngresosComponent implements OnInit {
     this.categoriaSeleccionada = item.categoria;
     this.ingresoForm.patchValue({ concepto_id: item.concepto.id });
 
-    // El detalle SIEMPRE es opcional
-    this.ingresoForm.get('detalle')?.clearValidators();
-    this.ingresoForm.get('detalle')?.updateValueAndValidity();
+    // El detalle SIEMPRE es opcional - remover cualquier validador
+    const detalleControl = this.ingresoForm.get('detalle');
+    if (detalleControl) {
+      detalleControl.clearValidators();
+      detalleControl.setErrors(null);
+      detalleControl.updateValueAndValidity();
+    }
   }
 
   limpiarSeleccion(): void {
@@ -155,8 +179,14 @@ export class IngresosComponent implements OnInit {
     this.searchTerm = '';
     this.conceptosFiltrados = [...this.todosLosConceptos];
     this.ingresoForm.patchValue({ concepto_id: '' });
-    this.ingresoForm.get('detalle')?.clearValidators();
-    this.ingresoForm.get('detalle')?.updateValueAndValidity();
+    
+    // Asegurar que detalle no tenga validadores
+    const detalleControl = this.ingresoForm.get('detalle');
+    if (detalleControl) {
+      detalleControl.clearValidators();
+      detalleControl.setErrors(null);
+      detalleControl.updateValueAndValidity();
+    }
   }
 
   onSubmit(): void {
@@ -214,6 +244,28 @@ export class IngresosComponent implements OnInit {
 
   get requiereDetalle(): boolean {
     return this.conceptoSeleccionado?.requiere_detalle || false;
+  }
+
+  /**
+   * Bloquear teclas no numéricas
+   */
+  validarTeclaNumero(event: KeyboardEvent): boolean {
+    const charCode = event.which ? event.which : event.keyCode;
+    // Permitir: backspace, delete, tab, escape, enter, punto decimal
+    if ([46, 8, 9, 27, 13].indexOf(charCode) !== -1 ||
+        // Permitir: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+        (charCode === 65 && event.ctrlKey === true) ||
+        (charCode === 67 && event.ctrlKey === true) ||
+        (charCode === 86 && event.ctrlKey === true) ||
+        (charCode === 88 && event.ctrlKey === true)) {
+      return true;
+    }
+    // Asegurar que es un número
+    if (charCode < 48 || charCode > 57) {
+      event.preventDefault();
+      return false;
+    }
+    return true;
   }
 
   /**

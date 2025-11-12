@@ -19,7 +19,8 @@
         <input 
           type="text" 
           [value]="valorFormateado" 
-          (input)="formatearValorInput($event)" 
+          (input)="formatearValorInput($event)"
+          (keypress)="validarTeclaNumero($event)"
           class="form-input" 
           placeholder="Ej: 50.000"
           inputmode="numeric"
@@ -95,7 +96,20 @@
   <div class="movimientos-card" *ngIf="ingresos.length > 0">
     <h3 class="movimientos-title">📋 Últimos Ingresos</h3>
 
-    <div class="movimiento-item" *ngFor="let ingreso of ingresos">
+    <!-- BUSCADOR DE MOVIMIENTOS -->
+    <div class="search-box-movimientos">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        class="search-input" 
+        placeholder="Buscar por concepto, categoría o detalle..." 
+        [(ngModel)]="searchMovimientos"
+        [ngModelOptions]="{standalone: true}" 
+        (input)="buscarMovimientos($event)" 
+      />
+    </div>
+
+    <div class="movimiento-item" *ngFor="let ingreso of ingresosFiltrados">
       <div class="movimiento-info">
         <div class="movimiento-top">
           <span class="movimiento-icon">{{ ingreso.concepto_icono }}</span>
@@ -115,11 +129,16 @@
     </div>
 
     <!-- BOTÓN VER MÁS -->
-    <div class="ver-mas-container" *ngIf="hayMasRegistros">
+    <div class="ver-mas-container" *ngIf="hayMasRegistros && searchMovimientos.trim() === ''">
       <button class="ver-mas-btn" (click)="cargarMasIngresos()" [disabled]="loading">
         {{ loading ? 'Cargando...' : 'Ver más registros' }}
       </button>
       <p class="registros-info">Mostrando {{ totalRegistrosCargados }} registros</p>
+    </div>
+
+    <!-- MENSAJE SIN RESULTADOS DE BÚSQUEDA -->
+    <div class="no-results" *ngIf="ingresosFiltrados.length === 0 && searchMovimientos.trim() !== ''">
+      No se encontraron ingresos con "{{ searchMovimientos }}"
     </div>
   </div>
 

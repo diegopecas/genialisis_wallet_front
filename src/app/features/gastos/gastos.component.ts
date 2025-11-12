@@ -29,6 +29,8 @@ export class GastosComponent implements OnInit {
   loading = false;
   circuloId: number = 0;
   gastos: any[] = [];
+  gastosFiltrados: any[] = [];
+  searchMovimientos: string = '';
   valorFormateado: string = '';
   
   // Variables para paginación
@@ -108,6 +110,7 @@ export class GastosComponent implements OnInit {
       next: (response: any) => {
         if (response.success) {
           this.gastos = response.data.movimientos;
+          this.gastosFiltrados = [...this.gastos]; // Inicializar lista filtrada
           this.totalRegistrosCargados = this.gastos.length;
           
           // Si trajo menos registros que el límite, no hay más
@@ -124,6 +127,23 @@ export class GastosComponent implements OnInit {
   cargarMasGastos(): void {
     this.limitePorPagina += 10;
     this.cargarGastos();
+  }
+
+  /**
+   * Buscar/filtrar movimientos por concepto, categoría o detalle
+   */
+  buscarMovimientos(event: any): void {
+    this.searchMovimientos = event.target.value.toLowerCase();
+
+    if (this.searchMovimientos.trim() === '') {
+      this.gastosFiltrados = [...this.gastos];
+    } else {
+      this.gastosFiltrados = this.gastos.filter(gasto =>
+        gasto.concepto_nombre.toLowerCase().includes(this.searchMovimientos) ||
+        gasto.categoria_nombre.toLowerCase().includes(this.searchMovimientos) ||
+        (gasto.detalle && gasto.detalle.toLowerCase().includes(this.searchMovimientos))
+      );
+    }
   }
 
   buscarConceptos(event: any): void {
@@ -144,9 +164,13 @@ export class GastosComponent implements OnInit {
     this.categoriaSeleccionada = item.categoria;
     this.gastoForm.patchValue({ concepto_id: item.concepto.id });
 
-    // El detalle SIEMPRE es opcional
-    this.gastoForm.get('detalle')?.clearValidators();
-    this.gastoForm.get('detalle')?.updateValueAndValidity();
+    // El detalle SIEMPRE es opcional - remover cualquier validador
+    const detalleControl = this.gastoForm.get('detalle');
+    if (detalleControl) {
+      detalleControl.clearValidators();
+      detalleControl.setErrors(null);
+      detalleControl.updateValueAndValidity();
+    }
   }
 
   limpiarSeleccion(): void {
@@ -155,8 +179,14 @@ export class GastosComponent implements OnInit {
     this.searchTerm = '';
     this.conceptosFiltrados = [...this.todosLosConceptos];
     this.gastoForm.patchValue({ concepto_id: '' });
-    this.gastoForm.get('detalle')?.clearValidators();
-    this.gastoForm.get('detalle')?.updateValueAndValidity();
+    
+    // Asegurar que detalle no tenga validadores
+    const detalleControl = this.gastoForm.get('detalle');
+    if (detalleControl) {
+      detalleControl.clearValidators();
+      detalleControl.setErrors(null);
+      detalleControl.updateValueAndValidity();
+    }
   }
 
   onSubmit(): void {
@@ -214,6 +244,28 @@ export class GastosComponent implements OnInit {
 
   get requiereDetalle(): boolean {
     return this.conceptoSeleccionado?.requiere_detalle || false;
+  }
+
+  /**
+   * Bloquear teclas no numéricas
+   */
+  validarTeclaNumero(event: KeyboardEvent): boolean {
+    const charCode = event.which ? event.which : event.keyCode;
+    // Permitir: backspace, delete, tab, escape, enter, punto decimal
+    if ([46, 8, 9, 27, 13].indexOf(charCode) !== -1 ||
+        // Permitir: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+        (charCode === 65 && event.ctrlKey === true) ||
+        (charCode === 67 && event.ctrlKey === true) ||
+        (charCode === 86 && event.ctrlKey === true) ||
+        (charCode === 88 && event.ctrlKey === true)) {
+      return true;
+    }
+    // Asegurar que es un número
+    if (charCode < 48 || charCode > 57) {
+      event.preventDefault();
+      return false;
+    }
+    return true;
   }
 
   /**
