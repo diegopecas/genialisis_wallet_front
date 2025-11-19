@@ -106,18 +106,24 @@ export class IngresosComponent implements OnInit {
   }
 
   cargarIngresos(): void {
+    this.loading = true;
+    
     this.movimientosService.getMovimientos(1, this.circuloId, undefined, undefined, this.limitePorPagina).subscribe({
       next: (response: any) => {
         if (response.success) {
           this.ingresos = response.data.movimientos;
-          this.ingresosFiltrados = [...this.ingresos]; // Inicializar lista filtrada
+          this.ingresosFiltrados = [...this.ingresos];
           this.totalRegistrosCargados = this.ingresos.length;
           
-          // Si trajo menos registros que el límite, no hay más
-          this.hayMasRegistros = this.ingresos.length === this.limitePorPagina;
+          // LÓGICA CORREGIDA: Si trajo menos registros que el límite solicitado, no hay más
+          this.hayMasRegistros = this.ingresos.length >= this.limitePorPagina;
         }
+        this.loading = false;
       },
-      error: (error: any) => console.error('Error cargando ingresos:', error)
+      error: (error: any) => {
+        console.error('Error cargando ingresos:', error);
+        this.loading = false;
+      }
     });
   }
 
@@ -209,6 +215,7 @@ export class IngresosComponent implements OnInit {
             
             // Resetear paginación al crear nuevo registro
             this.limitePorPagina = 10;
+            this.hayMasRegistros = true;
             this.cargarIngresos();
           }
           this.loading = false;

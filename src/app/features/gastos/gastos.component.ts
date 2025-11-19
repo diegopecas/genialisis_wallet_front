@@ -107,18 +107,24 @@ export class GastosComponent implements OnInit {
   }
 
   cargarGastos(): void {
+    this.loading = true;
+    
     this.movimientosService.getMovimientos(2, this.circuloId, undefined, undefined, this.limitePorPagina).subscribe({
       next: (response: any) => {
         if (response.success) {
           this.gastos = response.data.movimientos;
-          this.gastosFiltrados = [...this.gastos]; // Inicializar lista filtrada
+          this.gastosFiltrados = [...this.gastos];
           this.totalRegistrosCargados = this.gastos.length;
           
-          // Si trajo menos registros que el límite, no hay más
-          this.hayMasRegistros = this.gastos.length === this.limitePorPagina;
+          // LÓGICA CORREGIDA: Si trajo menos registros que el límite solicitado, no hay más
+          this.hayMasRegistros = this.gastos.length >= this.limitePorPagina;
         }
+        this.loading = false;
       },
-      error: (error: any) => console.error('Error cargando gastos:', error)
+      error: (error: any) => {
+        console.error('Error cargando gastos:', error);
+        this.loading = false;
+      }
     });
   }
 
@@ -176,13 +182,6 @@ export class GastosComponent implements OnInit {
     
     // FORZAR actualización del estado del formulario
     this.gastoForm.updateValueAndValidity();
-    
-    console.log('✅ Concepto seleccionado - Estado formulario:', {
-      valid: this.gastoForm.valid,
-      errors: this.gastoForm.errors,
-      detalleErrors: detalleControl?.errors,
-      detalleValid: detalleControl?.valid
-    });
   }
 
   limpiarSeleccion(): void {
@@ -203,22 +202,6 @@ export class GastosComponent implements OnInit {
   }
 
   onSubmit(): void {
-    console.log('🔍 Intentando enviar - Estado formulario:', {
-      valid: this.gastoForm.valid,
-      value: this.gastoForm.value,
-      errors: this.gastoForm.errors
-    });
-
-    // VERIFICAR cada control
-    Object.keys(this.gastoForm.controls).forEach(key => {
-      const control = this.gastoForm.get(key);
-      console.log(`  - ${key}:`, {
-        value: control?.value,
-        valid: control?.valid,
-        errors: control?.errors
-      });
-    });
-
     if (this.gastoForm.valid) {
       this.loading = true;
 
@@ -227,12 +210,9 @@ export class GastosComponent implements OnInit {
         circulos_ids: [this.circuloId]
       };
 
-      console.log('📤 Enviando datos:', formData);
-
       this.movimientosService.create(formData).subscribe({
         next: (response: any) => {
           if (response.success) {
-            console.log('✅ Gasto creado exitosamente');
             this.gastoForm.reset({
               fecha: this.obtenerFechaLocal()
             });
@@ -241,17 +221,16 @@ export class GastosComponent implements OnInit {
             
             // Resetear paginación al crear nuevo registro
             this.limitePorPagina = 10;
+            this.hayMasRegistros = true;
             this.cargarGastos();
           }
           this.loading = false;
         },
         error: (error: any) => {
-          console.error('❌ Error creando gasto:', error);
+          console.error('Error creando gasto:', error);
           this.loading = false;
         }
       });
-    } else {
-      console.log('❌ Formulario inválido - no se puede enviar');
     }
   }
 
