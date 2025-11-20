@@ -228,6 +228,8 @@ localStorage.clear();
 
 ```bash
 ng serve --port 4300
+
+
 ```
 
 ### Build de producción
@@ -237,7 +239,7 @@ ng build --configuration production
 ```
 
 Los archivos se generan en `/dist/circle-finance-front/`
-
+npx http-server dist/circle-finance-front -p 4300
 ---
 
 ## 📊 Integración con Backend
@@ -296,3 +298,7 @@ Para problemas o dudas:
 ---
 
 **¡Frontend Angular listo para usar! 🎉**
+
+
+## Estructurq
+tree src /F > estructura_apps.txt
