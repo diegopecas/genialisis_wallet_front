@@ -1,48 +1,123 @@
 /**
  * MovimientosModalComponent
  * Modal reutilizable para mostrar lista de movimientos filtrados
+ * ACTUALIZADO: Con búsqueda y separación de ingresos/gastos
  */
 
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Movimiento } from '../../core/models/movimiento.model';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  OnChanges,
+  SimpleChanges,
+} from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { Movimiento } from "../../core/models/movimiento.model";
 
 @Component({
-  selector: 'app-movimientos-modal',
+  selector: "app-movimientos-modal",
   standalone: true,
-  imports: [CommonModule],
-  templateUrl: './movimientos-modal.component.html',
-  styleUrls: ['./movimientos-modal.component.scss']
+  imports: [CommonModule, FormsModule],
+  templateUrl: "./movimientos-modal.component.html",
+  styleUrls: ["./movimientos-modal.component.scss"],
 })
-export class MovimientosModalComponent {
-  
+export class MovimientosModalComponent implements OnChanges {
   @Input() movimientos: Movimiento[] = [];
-  @Input() titulo: string = 'Movimientos';
-  @Input() subtitulo: string = '';
+  @Input() titulo: string = "Movimientos";
+  @Input() subtitulo: string = "";
   @Input() isOpen: boolean = false;
-  
+
   @Output() close = new EventEmitter<void>();
 
+  // NUEVO: Para búsqueda
+  busqueda: string = "";
+
+  // NUEVO: Movimientos filtrados por búsqueda
+  movimientosFiltrados: Movimiento[] = [];
+
+  // NUEVO: Agrupados por tipo
+  ingresos: Movimiento[] = [];
+  gastos: Movimiento[] = [];
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes["movimientos"] || changes["isOpen"]) {
+      this.busqueda = ""; // Reset búsqueda al abrir
+      this.aplicarFiltros();
+    }
+  }
+
   onClose(): void {
+    this.busqueda = "";
     this.close.emit();
   }
 
   onOverlayClick(event: MouseEvent): void {
     // Cerrar solo si el clic es directamente en el overlay, no en el contenido
-    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+    if ((event.target as HTMLElement).classList.contains("modal-overlay")) {
       this.onClose();
     }
   }
 
+  /**
+   * Aplicar filtros de búsqueda y agrupar
+   */
+  aplicarFiltros(): void {
+    // Filtrar por búsqueda
+    if (this.busqueda.trim() === "") {
+      this.movimientosFiltrados = [...this.movimientos];
+    } else {
+      const busquedaLower = this.busqueda.toLowerCase();
+      this.movimientosFiltrados = this.movimientos.filter(
+        (m) =>
+          m.concepto_nombre.toLowerCase().includes(busquedaLower) ||
+          m.categoria_nombre.toLowerCase().includes(busquedaLower) ||
+          (m.detalle && m.detalle.toLowerCase().includes(busquedaLower))
+      );
+    }
+
+    // Separar ingresos y gastos
+    this.ingresos = this.movimientosFiltrados.filter(
+      (m) => m.tipo_movimiento === "Ingreso"
+    );
+    this.gastos = this.movimientosFiltrados.filter(
+      (m) => m.tipo_movimiento === "Gasto"
+    );
+  }
+
+  /**
+   * Handler del input de búsqueda
+   */
+  onBusquedaChange(): void {
+    this.aplicarFiltros();
+  }
+
+  /**
+   * Limpiar búsqueda
+   */
+  limpiarBusqueda(): void {
+    this.busqueda = "";
+    this.aplicarFiltros();
+  }
+
   formatearValor(valor: number): string {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      minimumFractionDigits: 0,
     }).format(valor);
   }
 
   getTipoClase(tipo: string): string {
-    return tipo === 'Ingreso' ? 'ingreso' : 'gasto';
+    return tipo === "Ingreso" ? "ingreso" : "gasto";
+  }
+
+  get totalIngresos(): number {
+    return this.ingresos.reduce((sum, m) => sum + (+m.valor || 0), 0);
+  }
+
+  get totalGastos(): number {
+    return this.gastos.reduce((sum, m) => sum + (+m.valor || 0), 0);
   }
 }

@@ -1,5 +1,8 @@
-<div class="modal-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)">
-  <div class="modal-content" [@slideIn]>
+<div class="modal-overlay" 
+     *ngIf="isOpen" 
+     (click)="onOverlayClick($event)">
+  
+  <div class="modal-content">
     <!-- Header -->
     <div class="modal-header">
       <div class="modal-title-section">
@@ -11,47 +14,101 @@
       </button>
     </div>
 
+    <!-- NUEVO: Búsqueda -->
+    <div class="modal-search">
+      <div class="search-input-wrapper">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          class="search-input"
+          placeholder="Buscar por concepto, categoría o detalle..."
+          [(ngModel)]="busqueda"
+          (ngModelChange)="onBusquedaChange()">
+        <button 
+          *ngIf="busqueda" 
+          class="clear-btn" 
+          (click)="limpiarBusqueda()"
+          aria-label="Limpiar">
+          ✕
+        </button>
+      </div>
+    </div>
+
     <!-- Body -->
     <div class="modal-body">
-      <div class="movimientos-count">
-        Total: {{ movimientos.length }} movimiento{{
-          movimientos.length !== 1 ? "s" : ""
-        }}
+      <!-- Totales -->
+      <div class="totales-resumen">
+        <div class="total-badge ingreso" *ngIf="ingresos.length > 0">
+          <span class="badge-icon">💰</span>
+          <span class="badge-text">{{ ingresos.length }} Ingreso(s)</span>
+          <span class="badge-value">{{ formatearValor(totalIngresos) }}</span>
+        </div>
+        <div class="total-badge gasto" *ngIf="gastos.length > 0">
+          <span class="badge-icon">💸</span>
+          <span class="badge-text">{{ gastos.length }} Gasto(s)</span>
+          <span class="badge-value">{{ formatearValor(totalGastos) }}</span>
+        </div>
       </div>
 
-      <div class="movimientos-list" *ngIf="movimientos.length > 0">
-        <div
-          class="movimiento-item"
-          *ngFor="let mov of movimientos"
-          [class]="getTipoClase(mov.tipo_movimiento)"
-        >
-          <div class="movimiento-icon">{{ mov.concepto_icono }}</div>
-
-          <div class="movimiento-info">
-            <div class="movimiento-concepto">{{ mov.concepto_nombre }}</div>
-            <div class="movimiento-categoria">
-              <span class="categoria-icon">{{ mov.categoria_icono }}</span>
-              {{ mov.categoria_nombre }}
+      <!-- INGRESOS -->
+      <div class="movimientos-section" *ngIf="ingresos.length > 0">
+        <h3 class="section-header ingreso">
+          <span class="header-icon">💰</span>
+          Ingresos ({{ ingresos.length }})
+        </h3>
+        <div class="movimientos-list">
+          <div class="movimiento-item ingreso" *ngFor="let mov of ingresos">
+            <div class="movimiento-icon">{{ mov.concepto_icono }}</div>
+            
+            <div class="movimiento-info">
+              <div class="movimiento-concepto">{{ mov.concepto_nombre }}</div>
+              <div class="movimiento-categoria">
+                <span class="categoria-icon">{{ mov.categoria_icono }}</span>
+                {{ mov.categoria_nombre }}
+              </div>
+              <div class="movimiento-fecha">{{ mov.fecha | date:'dd/MM/yyyy' }}</div>
+              <div class="movimiento-detalle" *ngIf="mov.detalle">{{ mov.detalle }}</div>
             </div>
-            <div class="movimiento-fecha">
-              {{ mov.fecha | date : "dd/MM/yyyy" }}
+            
+            <div class="movimiento-valor ingreso">
+              {{ formatearValor(mov.valor) }}
             </div>
-            <div class="movimiento-detalle" *ngIf="mov.detalle">
-              {{ mov.detalle }}
-            </div>
-          </div>
-
-          <div
-            class="movimiento-valor"
-            [class]="getTipoClase(mov.tipo_movimiento)"
-          >
-            {{ formatearValor(mov.valor) }}
           </div>
         </div>
       </div>
 
-      <div class="empty-state" *ngIf="movimientos.length === 0">
-        <p>No hay movimientos para mostrar</p>
+      <!-- GASTOS -->
+      <div class="movimientos-section" *ngIf="gastos.length > 0">
+        <h3 class="section-header gasto">
+          <span class="header-icon">💸</span>
+          Gastos ({{ gastos.length }})
+        </h3>
+        <div class="movimientos-list">
+          <div class="movimiento-item gasto" *ngFor="let mov of gastos">
+            <div class="movimiento-icon">{{ mov.concepto_icono }}</div>
+            
+            <div class="movimiento-info">
+              <div class="movimiento-concepto">{{ mov.concepto_nombre }}</div>
+              <div class="movimiento-categoria">
+                <span class="categoria-icon">{{ mov.categoria_icono }}</span>
+                {{ mov.categoria_nombre }}
+              </div>
+              <div class="movimiento-fecha">{{ mov.fecha | date:'dd/MM/yyyy' }}</div>
+              <div class="movimiento-detalle" *ngIf="mov.detalle">{{ mov.detalle }}</div>
+            </div>
+            
+            <div class="movimiento-valor gasto">
+              {{ formatearValor(mov.valor) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="ingresos.length === 0 && gastos.length === 0">
+        <div class="empty-icon">🔍</div>
+        <p *ngIf="busqueda">No se encontraron movimientos que coincidan con "{{ busqueda }}"</p>
+        <p *ngIf="!busqueda">No hay movimientos para mostrar</p>
       </div>
     </div>
 
