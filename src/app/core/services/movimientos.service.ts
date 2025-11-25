@@ -42,21 +42,27 @@ export class MovimientosService {
    * @param circuloId ID del círculo (opcional)
    * @param anio Año (opcional)
    * @param mes Mes (opcional)
-   * @param limit Límite de resultados (default: 10)
+   * @param limit Límite de resultados (0 = sin límite, null = sin límite)
    */
   getMovimientos(
     tipoMovId?: number,
     circuloId?: number,
     anio?: number,
     mes?: number,
-    limit: number = 10
+    limit?: number | null
   ): Observable<MovimientosResponse> {
-    const params: any = { limit };
+    const params: any = {};
 
     if (tipoMovId) params.tipo_mov_id = tipoMovId;
     if (circuloId) params.circulo_id = circuloId;
     if (anio) params.anio = anio;
     if (mes) params.mes = mes;
+    
+    // Si limit es undefined, no lo enviamos (backend decide)
+    // Si limit es 0 o null, significa "sin límite"
+    if (limit !== undefined) {
+      params.limit = limit === null ? 0 : limit;
+    }
 
     return this.apiService.get<MovimientosResponse>('movimientos', params);
   }

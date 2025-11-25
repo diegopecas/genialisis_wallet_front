@@ -74,7 +74,10 @@
   <div class="totales-dia-section" *ngIf="!loading && totalesPorDia && totalesPorDia.length > 0">
     <h3 class="section-title">📅 Totales por Día</h3>
 
-    <div class="dia-item" *ngFor="let dia of totalesPorDia">
+    <!-- NUEVO: Agregado (click) para abrir modal -->
+    <div class="dia-item clickable" 
+         *ngFor="let dia of totalesPorDia"
+         (click)="mostrarMovimientosPorFecha(dia.fecha)">
       <div class="dia-fecha">
         <span class="fecha-icon">📅</span>
         <span class="fecha-text">{{ dia.fecha | date:'dd/MM/yyyy' }}</span>
@@ -100,7 +103,10 @@
     <div class="categoria-card" *ngIf="categoriaIngresos && categoriaIngresos.length > 0">
       <h3 class="categoria-title income">💰 Ingresos por Categoría</h3>
       <div class="categoria-list">
-        <div class="categoria-item" *ngFor="let cat of categoriaIngresos">
+        <!-- NUEVO: Agregado (click) para abrir modal -->
+        <div class="categoria-item clickable" 
+             *ngFor="let cat of categoriaIngresos"
+             (click)="mostrarMovimientosPorCategoria(cat.categoria_nombre, 'Ingreso')">
           <div class="categoria-info">
             <span class="categoria-icon">{{ cat.categoria_icono }}</span>
             <div class="categoria-text">
@@ -117,7 +123,10 @@
     <div class="categoria-card" *ngIf="categoriaGastos && categoriaGastos.length > 0">
       <h3 class="categoria-title expense">💸 Gastos por Categoría</h3>
       <div class="categoria-list">
-        <div class="categoria-item" *ngFor="let cat of categoriaGastos">
+        <!-- NUEVO: Agregado (click) para abrir modal -->
+        <div class="categoria-item clickable" 
+             *ngFor="let cat of categoriaGastos"
+             (click)="mostrarMovimientosPorCategoria(cat.categoria_nombre, 'Gasto')">
           <div class="categoria-info">
             <span class="categoria-icon">{{ cat.categoria_icono }}</span>
             <div class="categoria-text">
@@ -137,7 +146,10 @@
     <div class="detail-card" *ngIf="detalleIngresos && detalleIngresos.length > 0">
       <h3 class="detail-title income">💰 Detalle Ingresos por Concepto</h3>
       <div class="detail-list">
-        <div class="detail-item" *ngFor="let detalle of detalleIngresos">
+        <!-- NUEVO: Agregado (click) para abrir modal -->
+        <div class="detail-item clickable" 
+             *ngFor="let detalle of detalleIngresos"
+             (click)="mostrarMovimientosPorConcepto(detalle.concepto_nombre, 'Ingreso')">
           <div class="detail-info">
             <span class="detail-icon">{{ detalle.concepto_icono }}</span>
             <div class="detail-text">
@@ -155,7 +167,10 @@
     <div class="detail-card" *ngIf="detalleGastos && detalleGastos.length > 0">
       <h3 class="detail-title expense">💸 Detalle Gastos por Concepto</h3>
       <div class="detail-list">
-        <div class="detail-item" *ngFor="let detalle of detalleGastos">
+        <!-- NUEVO: Agregado (click) para abrir modal -->
+        <div class="detail-item clickable" 
+             *ngFor="let detalle of detalleGastos"
+             (click)="mostrarMovimientosPorConcepto(detalle.concepto_nombre, 'Gasto')">
           <div class="detail-info">
             <span class="detail-icon">{{ detalle.concepto_icono }}</span>
             <div class="detail-text">
@@ -189,3 +204,12 @@
   <!-- LOADING -->
   <div *ngIf="loading" class="loading-message">Cargando datos...</div>
 </div>
+
+<!-- NUEVO: Modal de movimientos -->
+<app-movimientos-modal
+  [movimientos]="modalMovimientos"
+  [titulo]="modalTitulo"
+  [subtitulo]="modalSubtitulo"
+  [isOpen]="isModalOpen"
+  (close)="cerrarModal()">
+</app-movimientos-modal>

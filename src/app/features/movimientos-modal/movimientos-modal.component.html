@@ -1,0 +1,63 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)">
+  <div class="modal-content" [@slideIn]>
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="modal-title-section">
+        <h2 class="modal-title">{{ titulo }}</h2>
+        <p class="modal-subtitle" *ngIf="subtitulo">{{ subtitulo }}</p>
+      </div>
+      <button class="modal-close-btn" (click)="onClose()" aria-label="Cerrar">
+        <span>✕</span>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+      <div class="movimientos-count">
+        Total: {{ movimientos.length }} movimiento{{
+          movimientos.length !== 1 ? "s" : ""
+        }}
+      </div>
+
+      <div class="movimientos-list" *ngIf="movimientos.length > 0">
+        <div
+          class="movimiento-item"
+          *ngFor="let mov of movimientos"
+          [class]="getTipoClase(mov.tipo_movimiento)"
+        >
+          <div class="movimiento-icon">{{ mov.concepto_icono }}</div>
+
+          <div class="movimiento-info">
+            <div class="movimiento-concepto">{{ mov.concepto_nombre }}</div>
+            <div class="movimiento-categoria">
+              <span class="categoria-icon">{{ mov.categoria_icono }}</span>
+              {{ mov.categoria_nombre }}
+            </div>
+            <div class="movimiento-fecha">
+              {{ mov.fecha | date : "dd/MM/yyyy" }}
+            </div>
+            <div class="movimiento-detalle" *ngIf="mov.detalle">
+              {{ mov.detalle }}
+            </div>
+          </div>
+
+          <div
+            class="movimiento-valor"
+            [class]="getTipoClase(mov.tipo_movimiento)"
+          >
+            {{ formatearValor(mov.valor) }}
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="movimientos.length === 0">
+        <p>No hay movimientos para mostrar</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button class="btn-cerrar" (click)="onClose()">Cerrar</button>
+    </div>
+  </div>
+</div>

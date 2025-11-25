@@ -1,6 +1,7 @@
 /**
  * BalanceComponent
  * Balance con saldo anterior acumulado correctamente
+ * NUEVA FUNCIONALIDAD: Mostrar movimientos en modal al hacer clic
  */
 
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
@@ -9,6 +10,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { AuthService } from '../../core/services/auth.service';
 import { MovimientosService } from '../../core/services/movimientos.service';
+import { MovimientosModalComponent } from '../movimientos-modal/movimientos-modal.component';
 import {
   Balance,
   DetalleConcepto,
@@ -16,7 +18,8 @@ import {
   TotalPorDia,
   TotalPorCategoria,
   GraficoCategoria,
-  SaldoAnterior
+  SaldoAnterior,
+  Movimiento
 } from '../../core/models/movimiento.model';
 
 Chart.register(...registerables);
@@ -24,7 +27,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-balance',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MovimientosModalComponent],
   templateUrl: './balance.component.html',
   styleUrls: ['./balance.component.scss']
 })
@@ -47,6 +50,16 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   totalesPorDia: TotalPorDia[] = [];
   categoriaIngresos: TotalPorCategoria[] = [];
   categoriaGastos: TotalPorCategoria[] = [];
+  
+  // NUEVO: Array de movimientos del período
+  movimientosPeriodo: Movimiento[] = [];
+  
+  // NUEVO: Control del modal
+  modalMovimientos: Movimiento[] = [];
+  modalTitulo: string = '';
+  modalSubtitulo: string = '';
+  isModalOpen: boolean = false;
+  
   loading = false;
   circuloId: number = 0;
   chart: Chart | null = null;
@@ -78,14 +91,13 @@ export class BalanceComponent implements OnInit, AfterViewInit {
 
     const fechaActual = new Date();
     const anioActual = fechaActual.getFullYear();
-    const mesActual = fechaActual.getMonth() + 1; // getMonth() retorna 0-11, necesitamos 1-12
+    const mesActual = fechaActual.getMonth() + 1;
     
     this.anios = [anioActual, anioActual - 1, anioActual - 2];
 
-    // CAMBIO IMPORTANTE: Inicializar con el mes actual, no con null
     this.filtrosForm = this.fb.group({
       anio: [anioActual],
-      mes: [mesActual]  // Cambiado de null a mesActual
+      mes: [mesActual]
     });
   }
 
@@ -114,6 +126,7 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     this.detalleGastos = [];
     this.datosGraficoCategoria = [];
     this.saldoAnteriorData = null;
+    this.movimientosPeriodo = [];
 
     // IMPORTANTE: Cargar saldo anterior y balance en paralelo
     Promise.all([
@@ -164,6 +177,24 @@ export class BalanceComponent implements OnInit, AfterViewInit {
       // Calcular saldo final después de que ambas promesas se resuelvan
       this.balance.saldo_final = (+this.balance.saldo_anterior) + (+this.balance.balance_neto);
       
+    });
+
+    // NUEVO: Cargar TODOS los movimientos del período (sin límite)
+    this.movimientosService.getMovimientos(
+      undefined, // tipo_mov_id (undefined = todos)
+      this.circuloId,
+      anio,
+      mes,
+      0 // limit = 0 significa SIN LÍMITE
+    ).subscribe({
+      next: (response) => {
+        this.movimientosPeriodo = response?.data?.movimientos || [];
+        console.log(`Movimientos cargados: ${this.movimientosPeriodo.length}`);
+      },
+      error: (error) => {
+        console.error('Error cargando movimientos:', error);
+        this.movimientosPeriodo = [];
+      }
     });
 
     // Cargar totales por día
@@ -226,6 +257,71 @@ export class BalanceComponent implements OnInit, AfterViewInit {
       this.cargarEvolucion(anio);
     }
   }
+
+  // ========================================
+  // NUEVOS MÉTODOS PARA MODAL
+  // ========================================
+
+  /**
+   * Mostrar movimientos por fecha
+   */
+  mostrarMovimientosPorFecha(fecha: string): void {
+    this.modalMovimientos = this.movimientosPeriodo.filter(m => m.fecha === fecha);
+    this.modalTitulo = 'Movimientos del día';
+    this.modalSubtitulo = this.formatearFecha(fecha);
+    this.isModalOpen = true;
+  }
+
+  /**
+   * Mostrar movimientos por categoría
+   */
+  mostrarMovimientosPorCategoria(categoriaNombre: string, tipo: 'Ingreso' | 'Gasto'): void {
+    this.modalMovimientos = this.movimientosPeriodo.filter(
+      m => m.categoria_nombre === categoriaNombre && m.tipo_movimiento === tipo
+    );
+    this.modalTitulo = `${tipo}s - ${categoriaNombre}`;
+    this.modalSubtitulo = `${this.modalMovimientos.length} movimiento(s)`;
+    this.isModalOpen = true;
+  }
+
+  /**
+   * Mostrar movimientos por concepto
+   */
+  mostrarMovimientosPorConcepto(conceptoNombre: string, tipo: 'Ingreso' | 'Gasto'): void {
+    this.modalMovimientos = this.movimientosPeriodo.filter(
+      m => m.concepto_nombre === conceptoNombre && m.tipo_movimiento === tipo
+    );
+    this.modalTitulo = `${tipo}s - ${conceptoNombre}`;
+    this.modalSubtitulo = `${this.modalMovimientos.length} movimiento(s)`;
+    this.isModalOpen = true;
+  }
+
+  /**
+   * Cerrar modal
+   */
+  cerrarModal(): void {
+    this.isModalOpen = false;
+    this.modalMovimientos = [];
+    this.modalTitulo = '';
+    this.modalSubtitulo = '';
+  }
+
+  /**
+   * Formatear fecha para mostrar
+   */
+  private formatearFecha(fecha: string): string {
+    const date = new Date(fecha + 'T00:00:00');
+    return date.toLocaleDateString('es-CO', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
+
+  // ========================================
+  // MÉTODOS EXISTENTES (sin cambios)
+  // ========================================
   
   actualizarGraficoBarras(): void {
     if (!this.datosGraficoCategoria || this.datosGraficoCategoria.length === 0) {
