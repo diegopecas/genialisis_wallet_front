@@ -2,16 +2,15 @@
  * BalanceComponent
  * Balance con saldo anterior acumulado correctamente
  * NUEVA FUNCIONALIDAD: Mostrar movimientos en modal al hacer clic
- * CORREGIDO: Loop infinito solucionado con debounceTime y precálculo de periodoTexto
+ * ACTUALIZADO: Usa selectores globales del header vía PeriodoService
  */
 
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { debounceTime } from 'rxjs/operators';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { AuthService } from '../../core/services/auth.service';
 import { MovimientosService } from '../../core/services/movimientos.service';
+import { PeriodoService } from '../../core/services/periodo.service';
 import { MovimientosModalComponent } from '../movimientos-modal/movimientos-modal.component';
 import {
   Balance,
@@ -29,7 +28,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-balance',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MovimientosModalComponent],
+  imports: [CommonModule, MovimientosModalComponent],
   templateUrl: './balance.component.html',
   styleUrls: ['./balance.component.scss']
 })
@@ -38,7 +37,6 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('chartBarrasCanvas') chartBarrasCanvas!: ElementRef<HTMLCanvasElement>;
 
-  filtrosForm!: FormGroup;
   balance: Balance = { 
     total_ingresos: 0, 
     total_gastos: 0, 
@@ -53,10 +51,10 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   categoriaIngresos: TotalPorCategoria[] = [];
   categoriaGastos: TotalPorCategoria[] = [];
   
-  // NUEVO: Array de movimientos del período
+  // Array de movimientos del período
   movimientosPeriodo: Movimiento[] = [];
   
-  // NUEVO: Control del modal
+  // Control del modal
   modalMovimientos: Movimiento[] = [];
   modalTitulo: string = '';
   modalSubtitulo: string = '';
@@ -68,7 +66,11 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   chartBarras: Chart | null = null;
   datosGraficoCategoria: GraficoCategoria[] = [];
   periodoTextoCalculado: string = '';
-  anios: number[] = [];
+  
+  // Periodo actual (viene del servicio compartido)
+  anio: number = 0;
+  mes: number = 0;
+  
   meses = [
     { value: 1, nombre: 'Enero' },
     { value: 2, nombre: 'Febrero' },
@@ -85,33 +87,22 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   ];
 
   constructor(
-    private fb: FormBuilder,
     private authService: AuthService,
-    private movimientosService: MovimientosService
+    private movimientosService: MovimientosService,
+    private periodoService: PeriodoService
   ) {
     const circulo = this.authService.getPrimerCirculo();
     this.circuloId = circulo?.id || 0;
-
-    const fechaActual = new Date();
-    const anioActual = fechaActual.getFullYear();
-    const mesActual = fechaActual.getMonth() + 1;
-    
-    this.anios = [anioActual, anioActual - 1, anioActual - 2];
-
-    this.filtrosForm = this.fb.group({
-      anio: [anioActual],
-      mes: [mesActual]
-    });
   }
 
   ngOnInit(): void {
-    this.cargarDatos();
-
-    // CORREGIDO: Usar debounceTime para evitar loop infinito
-    this.filtrosForm.valueChanges.pipe(
-      debounceTime(300)
-    ).subscribe(() => {
-      this.cargarDatos();
+    // Suscribirse a cambios de periodo desde el header
+    this.periodoService.periodo$.subscribe(periodo => {
+      if (periodo.anio !== 0 && periodo.mes !== 0) {
+        this.anio = periodo.anio;
+        this.mes = periodo.mes;
+        this.cargarDatos();
+      }
     });
   }
 
@@ -121,8 +112,8 @@ export class BalanceComponent implements OnInit, AfterViewInit {
 
   cargarDatos(): void {
     this.loading = true;
-    const anio = this.filtrosForm.value.anio;
-    const mes = this.filtrosForm.value.mes;
+    const anio = this.anio;
+    const mes = this.mes;
 
     // Inicializar arrays por si las respuestas fallan
     this.totalesPorDia = [];
@@ -263,10 +254,9 @@ export class BalanceComponent implements OnInit, AfterViewInit {
       this.cargarEvolucion(anio);
     }
 
-    // CORREGIDO: Precalcular texto del período para evitar acceso a filtrosForm en getter
-    const mesVal = this.filtrosForm.value.mes;
-    if (mesVal) {
-      const mesNombre = this.meses.find(m => m.value === mesVal)?.nombre || '';
+    // Precalcular texto del período
+    if (mes) {
+      const mesNombre = this.meses.find(m => m.value === mes)?.nombre || '';
       this.periodoTextoCalculado = `${mesNombre} ${anio}`;
     } else {
       this.periodoTextoCalculado = `Año ${anio}`;
@@ -565,10 +555,10 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   }
 
   get mostrarGrafico(): boolean {
-    return !this.filtrosForm.value.mes;
+    return !this.mes;
   }
 
-  // CORREGIDO: Getter simplificado que retorna propiedad precalculada
+  // Getter que retorna propiedad precalculada
   get periodoTexto(): string {
     return this.periodoTextoCalculado;
   }

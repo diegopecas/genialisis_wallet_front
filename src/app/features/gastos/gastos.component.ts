@@ -9,6 +9,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
 import { AuthService } from '../../core/services/auth.service';
 import { ConceptosService } from '../../core/services/conceptos.service';
 import { MovimientosService } from '../../core/services/movimientos.service';
+import { PeriodoService } from '../../core/services/periodo.service';
 import { Categoria, Concepto } from '../../core/models/concepto.model';
 import { EditarMovimientoModalComponent } from '../editar-movimiento-modal/editar-movimiento-modal.component';
 
@@ -43,11 +44,16 @@ export class GastosComponent implements OnInit {
   movimientoAEditar: any = null;
   isModalEditarOpen: boolean = false;
 
+  // Periodo seleccionado (viene del servicio compartido)
+  anio: number = 0;
+  mes: number = 0;
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private conceptosService: ConceptosService,
-    private movimientosService: MovimientosService
+    private movimientosService: MovimientosService,
+    private periodoService: PeriodoService
   ) {
     const circulo = this.authService.getPrimerCirculo();
     this.circuloId = circulo?.id || 0;
@@ -79,7 +85,19 @@ export class GastosComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarConceptos();
-    this.cargarGastos();
+    
+    // Suscribirse a cambios de periodo
+    this.periodoService.periodo$.subscribe(periodo => {
+      if (periodo.anio !== 0 && periodo.mes !== 0) {
+        this.anio = periodo.anio;
+        this.mes = periodo.mes;
+        
+        // Resetear paginación y cargar gastos
+        this.limitePorPagina = 10;
+        this.hayMasRegistros = true;
+        this.cargarGastos();
+      }
+    });
   }
 
   cargarConceptos(): void {
@@ -114,7 +132,7 @@ export class GastosComponent implements OnInit {
   cargarGastos(): void {
     this.loading = true;
     
-    this.movimientosService.getMovimientos(2, this.circuloId, undefined, undefined, this.limitePorPagina).subscribe({
+    this.movimientosService.getMovimientos(2, this.circuloId, this.anio, this.mes, this.limitePorPagina).subscribe({
       next: (response: any) => {
         if (response.success) {
           this.gastos = response.data.movimientos;
@@ -134,11 +152,27 @@ export class GastosComponent implements OnInit {
   }
 
   /**
-   * Cargar más registros (incrementa el límite en 10)
+   * Cargar TODOS los registros del periodo seleccionado
    */
-  cargarMasGastos(): void {
-    this.limitePorPagina += 10;
-    this.cargarGastos();
+  cargarTodosDelPeriodo(): void {
+    this.loading = true;
+    
+    // limit = 0 significa "todos los registros"
+    this.movimientosService.getMovimientos(2, this.circuloId, this.anio, this.mes, 0).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.gastos = response.data.movimientos;
+          this.gastosFiltrados = [...this.gastos];
+          this.totalRegistrosCargados = this.gastos.length;
+          this.hayMasRegistros = false; // Ya no hay más registros
+        }
+        this.loading = false;
+      },
+      error: (error: any) => {
+        console.error('Error cargando gastos:', error);
+        this.loading = false;
+      }
+    });
   }
 
   /**

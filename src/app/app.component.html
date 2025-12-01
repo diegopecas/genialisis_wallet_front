@@ -6,6 +6,28 @@
         <h1 class="app-title">Circle Finance</h1>
         <p class="app-subtitle">{{ currentCirculo?.icono }} {{ currentCirculo?.nombre }}</p>
       </div>
+      
+      <!-- SELECTORES DE PERIODO -->
+      <div class="periodo-selector" *ngIf="activeTab === 'gastos' || activeTab === 'ingresos' || activeTab === 'balance'">
+        <select 
+          class="selector-periodo"
+          [(ngModel)]="anioSeleccionado" 
+          (change)="onAnioChange()">
+          <option *ngFor="let anio of aniosDisponibles" [value]="anio">
+            {{ anio }}
+          </option>
+        </select>
+        
+        <select 
+          class="selector-periodo"
+          [(ngModel)]="mesSeleccionado"
+          (change)="onMesChange()">
+          <option *ngFor="let mes of mesesDisponibles" [value]="mes">
+            {{ getNombreMes(mes) }}
+          </option>
+        </select>
+      </div>
+
       <button class="logout-btn" (click)="logout()" title="Cerrar sesión">
         🚪
       </button>

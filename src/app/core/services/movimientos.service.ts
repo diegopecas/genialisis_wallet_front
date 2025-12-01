@@ -21,6 +21,20 @@ import {
   SaldoAnteriorResponse
 } from '../models/movimiento.model';
 
+// Interface para periodos disponibles
+export interface PeriodoDisponible {
+  anio: number;
+  meses: number[];
+}
+
+export interface PeriodosDisponiblesResponse {
+  success: boolean;
+  message: string;
+  data: {
+    periodos: PeriodoDisponible[];
+  };
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -231,5 +245,23 @@ export class MovimientosService {
     if (mes) params.mes = mes;
 
     return this.apiService.get<GraficoCategoriaResponse>('movimientos/grafico/categoria', params);
+  }
+
+  /**
+   * Obtener periodos disponibles (años y meses con registros)
+   * 
+   * @param circuloId ID del círculo (opcional)
+   * @param tipoMovId Tipo de movimiento (1=Ingreso, 2=Gasto, null=Todos)
+   */
+  getPeriodosDisponibles(
+    circuloId?: number,
+    tipoMovId?: number
+  ): Observable<PeriodosDisponiblesResponse> {
+    const params: any = {};
+
+    if (circuloId) params.circulo_id = circuloId;
+    if (tipoMovId) params.tipo_mov_id = tipoMovId;
+
+    return this.apiService.get<PeriodosDisponiblesResponse>('movimientos/periodos/disponibles', params);
   }
 }

@@ -51,6 +51,41 @@
   opacity: 0.9;
 }
 
+/* SELECTORES DE PERIODO */
+.periodo-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0 12px;
+}
+
+.selector-periodo {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  &:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  option {
+    background: white;
+    color: var(--text-dark);
+  }
+}
+
 .logout-btn {
   background: rgba(255, 255, 255, 0.2);
   border: none;

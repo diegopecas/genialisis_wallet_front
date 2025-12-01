@@ -131,10 +131,10 @@
       </div>
     </div>
 
-    <!-- BOTÓN VER MÁS -->
+    <!-- BOTÓN CARGAR TODOS -->
     <div class="ver-mas-container" *ngIf="hayMasRegistros && searchMovimientos.trim() === ''">
-      <button class="ver-mas-btn" (click)="cargarMasIngresos()" [disabled]="loading">
-        {{ loading ? 'Cargando...' : 'Ver más registros' }}
+      <button class="ver-mas-btn" (click)="cargarTodosDelPeriodo()" [disabled]="loading">
+        {{ loading ? 'Cargando...' : 'Cargar todos del periodo' }}
       </button>
       <p class="registros-info">Mostrando {{ totalRegistrosCargados }} registros</p>
     </div>
