@@ -123,7 +123,10 @@
         </div>
         <div class="movimiento-valor danger">{{ formatearValor(gasto.valor) }}</div>
       </div>
-      <button class="delete-btn" (click)="eliminarGasto(gasto.id)">🗑️</button>
+      <div class="movimiento-actions">
+        <button class="edit-btn" (click)="abrirModalEditar(gasto)" title="Editar">✏️</button>
+        <button class="delete-btn" (click)="eliminarGasto(gasto.id)" title="Eliminar">🗑️</button>
+      </div>
     </div>
 
     <!-- BOTÓN VER MÁS -->
@@ -143,4 +146,13 @@
   <div class="empty-message" *ngIf="gastos.length === 0 && !loading">
     No hay gastos registrados
   </div>
+
+  <!-- MODAL DE EDICIÓN -->
+  <app-editar-movimiento-modal
+    [movimiento]="movimientoAEditar"
+    [isOpen]="isModalEditarOpen"
+    [circuloId]="circuloId"
+    (close)="cerrarModalEditar()"
+    (save)="guardarCambios($event)">
+  </app-editar-movimiento-modal>
 </div>

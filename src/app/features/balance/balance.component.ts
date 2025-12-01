@@ -2,11 +2,13 @@
  * BalanceComponent
  * Balance con saldo anterior acumulado correctamente
  * NUEVA FUNCIONALIDAD: Mostrar movimientos en modal al hacer clic
+ * CORREGIDO: Loop infinito solucionado con debounceTime y precálculo de periodoTexto
  */
 
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { debounceTime } from 'rxjs/operators';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { AuthService } from '../../core/services/auth.service';
 import { MovimientosService } from '../../core/services/movimientos.service';
@@ -65,6 +67,7 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   chart: Chart | null = null;
   chartBarras: Chart | null = null;
   datosGraficoCategoria: GraficoCategoria[] = [];
+  periodoTextoCalculado: string = '';
   anios: number[] = [];
   meses = [
     { value: 1, nombre: 'Enero' },
@@ -104,7 +107,10 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.cargarDatos();
 
-    this.filtrosForm.valueChanges.subscribe(() => {
+    // CORREGIDO: Usar debounceTime para evitar loop infinito
+    this.filtrosForm.valueChanges.pipe(
+      debounceTime(300)
+    ).subscribe(() => {
       this.cargarDatos();
     });
   }
@@ -255,6 +261,15 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     // Cargar evolución (solo si no hay mes seleccionado)
     if (!mes) {
       this.cargarEvolucion(anio);
+    }
+
+    // CORREGIDO: Precalcular texto del período para evitar acceso a filtrosForm en getter
+    const mesVal = this.filtrosForm.value.mes;
+    if (mesVal) {
+      const mesNombre = this.meses.find(m => m.value === mesVal)?.nombre || '';
+      this.periodoTextoCalculado = `${mesNombre} ${anio}`;
+    } else {
+      this.periodoTextoCalculado = `Año ${anio}`;
     }
   }
 
@@ -553,15 +568,8 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     return !this.filtrosForm.value.mes;
   }
 
+  // CORREGIDO: Getter simplificado que retorna propiedad precalculada
   get periodoTexto(): string {
-    const anio = this.filtrosForm.value.anio;
-    const mes = this.filtrosForm.value.mes;
-    
-    if (mes) {
-      const mesNombre = this.meses.find(m => m.value === mes)?.nombre || '';
-      return `${mesNombre} ${anio}`;
-    }
-    
-    return `Año ${anio}`;
+    return this.periodoTextoCalculado;
   }
 }

@@ -352,6 +352,14 @@
   }
 }
 
+/* ACCIONES DE MOVIMIENTO (Editar y Eliminar) */
+.movimiento-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.edit-btn,
 .delete-btn {
   background: none;
   border: none;
@@ -361,14 +369,22 @@
   opacity: 0.6;
   transition: all 0.2s;
   flex-shrink: 0;
+  border-radius: 8px;
 
   &:hover {
     opacity: 1;
-    transform: scale(1.2);
+    transform: scale(1.1);
+    background-color: rgba(0, 0, 0, 0.05);
   }
 
   &:active {
-    transform: scale(0.9);
+    transform: scale(0.95);
+  }
+}
+
+.edit-btn {
+  &:hover {
+    background-color: rgba(255, 152, 0, 0.1);
   }
 }
 
@@ -473,4 +489,3 @@
     }
   }
 }
-

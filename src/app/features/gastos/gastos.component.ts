@@ -10,11 +10,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { ConceptosService } from '../../core/services/conceptos.service';
 import { MovimientosService } from '../../core/services/movimientos.service';
 import { Categoria, Concepto } from '../../core/models/concepto.model';
+import { EditarMovimientoModalComponent } from '../editar-movimiento-modal/editar-movimiento-modal.component';
 
 @Component({
   selector: 'app-gastos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, EditarMovimientoModalComponent],
   templateUrl: './gastos.component.html',
   styleUrls: ['./gastos.component.scss']
 })
@@ -37,6 +38,10 @@ export class GastosComponent implements OnInit {
   limitePorPagina: number = 10;
   totalRegistrosCargados: number = 0;
   hayMasRegistros: boolean = true;
+
+  // Variables para modal de edición
+  movimientoAEditar: any = null;
+  isModalEditarOpen: boolean = false;
 
   constructor(
     private fb: FormBuilder,
@@ -302,5 +307,48 @@ export class GastosComponent implements OnInit {
 
   limpiarValorFormateado(): void {
     this.valorFormateado = '';
+  }
+
+  /**
+   * Abrir modal de edición
+   */
+  abrirModalEditar(gasto: any): void {
+    this.movimientoAEditar = { ...gasto };
+    this.isModalEditarOpen = true;
+  }
+
+  /**
+   * Cerrar modal de edición
+   */
+  cerrarModalEditar(): void {
+    this.isModalEditarOpen = false;
+    this.movimientoAEditar = null;
+  }
+
+  /**
+   * Guardar cambios del movimiento editado
+   */
+  guardarCambios(formData: any): void {
+    if (!this.movimientoAEditar) return;
+
+    this.loading = true;
+
+    this.movimientosService.update(this.movimientoAEditar.id, formData).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.cerrarModalEditar();
+          
+          // Resetear paginación
+          this.limitePorPagina = 10;
+          this.hayMasRegistros = true;
+          this.cargarGastos();
+        }
+        this.loading = false;
+      },
+      error: (error: any) => {
+        console.error('Error actualizando gasto:', error);
+        this.loading = false;
+      }
+    });
   }
 }

@@ -1,0 +1,113 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)">
+  
+  <div class="modal-content">
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="modal-title-section">
+        <h2 class="modal-title">✏️ Editar Movimiento</h2>
+        <p class="modal-subtitle" *ngIf="movimiento">
+          {{ movimiento.tipo_movimiento }}: {{ movimiento.concepto_nombre }}
+        </p>
+      </div>
+      <button class="modal-close-btn" (click)="onClose()" aria-label="Cerrar">
+        <span>✕</span>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+      <form [formGroup]="editarForm" (ngSubmit)="onSubmit()">
+        
+        <!-- FECHA -->
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input type="date" formControlName="fecha" class="form-input" />
+          <div class="form-error" *ngIf="editarForm.get('fecha')?.invalid && editarForm.get('fecha')?.touched">
+            Fecha es requerida
+          </div>
+        </div>
+
+        <!-- VALOR -->
+        <div class="form-group">
+          <label class="form-label">Valor</label>
+          <input 
+            type="text" 
+            [value]="valorFormateado" 
+            (input)="formatearValorInput($event)"
+            (keypress)="validarTeclaNumero($event)"
+            class="form-input" 
+            placeholder="Ej: 50.000"
+            inputmode="numeric"
+          />
+          <div class="form-error" *ngIf="editarForm.get('valor')?.invalid && editarForm.get('valor')?.touched">
+            Valor es requerido
+          </div>
+        </div>
+
+        <!-- DETALLE (siempre opcional) -->
+        <div class="form-group" *ngIf="conceptoSeleccionado">
+          <label class="form-label">
+            Detalle
+            <span class="optional">(opcional)</span>
+          </label>
+          <input type="text" formControlName="detalle" class="form-input" placeholder="Agrega un detalle" />
+        </div>
+
+        <!-- CONCEPTO SELECCIONADO -->
+        <div class="concepto-selected" *ngIf="conceptoSeleccionado">
+          <div class="selected-info">
+            <span class="selected-icon">{{ conceptoSeleccionado.icono }}</span>
+            <div class="selected-text">
+              <div class="selected-name">{{ conceptoSeleccionado.nombre }}</div>
+              <div class="selected-categoria">{{ categoriaSeleccionada }}</div>
+            </div>
+          </div>
+          <button type="button" class="clear-btn" (click)="limpiarSeleccion()">
+            ✕
+          </button>
+        </div>
+
+        <!-- SELECTOR DE CONCEPTOS (solo visible si no hay selección) -->
+        <div class="conceptos-section" *ngIf="!conceptoSeleccionado">
+          <label class="form-label">Concepto *</label>
+
+          <!-- BUSCADOR -->
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" placeholder="Buscar concepto..." [(ngModel)]="searchTerm"
+              [ngModelOptions]="{standalone: true}" (input)="buscarConceptos($event)" />
+          </div>
+
+          <!-- CONCEPTOS EN GRID COMPACTO -->
+          <div class="conceptos-grid" *ngIf="!loading && conceptosFiltrados.length > 0">
+            <div *ngFor="let item of conceptosFiltrados" class="concepto-card" (click)="seleccionarConcepto(item)">
+              <span class="concepto-icon">{{ item.concepto.icono }}</span>
+              <div class="concepto-info">
+                <div class="concepto-name">{{ item.concepto.nombre }}</div>
+                <div class="concepto-categoria">{{ item.categoria }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="conceptosFiltrados.length === 0" class="no-results">
+            No se encontraron conceptos
+          </div>
+
+          <div class="form-error" *ngIf="editarForm.get('concepto_id')?.invalid && editarForm.get('concepto_id')?.touched">
+            Debes seleccionar un concepto
+          </div>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="modal-actions">
+          <button type="button" class="btn-cancelar" (click)="onClose()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-guardar" [disabled]="!editarForm.valid || loading">
+            {{ loading ? 'Guardando...' : 'Guardar Cambios' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

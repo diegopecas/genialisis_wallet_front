@@ -8,11 +8,12 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { Usuario, Circulo } from './core/models/usuario.model';
+import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinner.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, RouterOutlet, LoadingSpinnerComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })

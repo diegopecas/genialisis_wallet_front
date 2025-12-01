@@ -36,6 +36,16 @@ export class MovimientosService {
   }
 
   /**
+   * Actualizar movimiento existente
+   * 
+   * @param id ID del movimiento a actualizar
+   * @param data Datos a actualizar (todos opcionales excepto circulos_ids si se envía)
+   */
+  update(id: number, data: Partial<CreateMovimientoRequest>): Observable<MovimientoResponse> {
+    return this.apiService.put<MovimientoResponse>(`movimientos/${id}`, data);
+  }
+
+  /**
    * Obtener movimientos con filtros
    * 
    * @param tipoMovId Tipo de movimiento (1=Ingreso, 2=Gasto, null=Todos)

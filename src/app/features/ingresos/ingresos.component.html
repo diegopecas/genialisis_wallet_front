@@ -125,7 +125,10 @@
         </div>
         <div class="movimiento-valor success">{{ formatearValor(ingreso.valor) }}</div>
       </div>
-      <button class="delete-btn" (click)="eliminarIngreso(ingreso.id)">🗑️</button>
+      <div class="movimiento-actions">
+        <button class="edit-btn" (click)="abrirModalEditar(ingreso)" title="Editar">✏️</button>
+        <button class="delete-btn" (click)="eliminarIngreso(ingreso.id)" title="Eliminar">🗑️</button>
+      </div>
     </div>
 
     <!-- BOTÓN VER MÁS -->
@@ -145,4 +148,13 @@
   <div class="empty-message" *ngIf="ingresos.length === 0 && !loading">
     No hay ingresos registrados
   </div>
+
+  <!-- MODAL DE EDICIÓN -->
+  <app-editar-movimiento-modal
+    [movimiento]="movimientoAEditar"
+    [isOpen]="isModalEditarOpen"
+    [circuloId]="circuloId"
+    (close)="cerrarModalEditar()"
+    (save)="guardarCambios($event)">
+  </app-editar-movimiento-modal>
 </div>

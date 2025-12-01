@@ -11,12 +11,16 @@ import { provideServiceWorker } from '@angular/service-worker';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes, withHashLocation()),
     provideHttpClient(
-      withInterceptors([authInterceptor])
+      withInterceptors([
+        loadingInterceptor,  // ← IMPORTANTE: Loading debe ir PRIMERO
+        authInterceptor      // ← Auth va después
+      ])
     ),
     provideAnimations(),
     provideServiceWorker('ngsw-worker.js', {
