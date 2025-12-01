@@ -1,6 +1,7 @@
 /**
  * AuthInterceptor
  * Interceptor HTTP para agregar el token JWT a todas las peticiones
+ * VERSION CON LOGS PARA DEBUG
  */
 
 import { HttpInterceptorFn } from '@angular/common/http';
@@ -18,6 +19,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         Authorization: `Bearer ${token}`
       }
     });
+  } else {
+    console.warn('⚠️ NO HAY TOKEN - Request sin autenticación');
   }
 
   return next(req);
