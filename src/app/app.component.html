@@ -4,24 +4,36 @@
     <div class="header-content">
       <div class="header-text">
         <h1 class="app-title">Circle Finance</h1>
-        <p class="app-subtitle">{{ currentCirculo?.icono }} {{ currentCirculo?.nombre }}</p>
+        <p class="app-subtitle">
+          {{ currentCirculo?.icono }} {{ currentCirculo?.nombre }}
+        </p>
       </div>
-      
+
       <!-- SELECTORES DE PERIODO -->
-      <div class="periodo-selector" *ngIf="activeTab === 'gastos' || activeTab === 'ingresos' || activeTab === 'balance'">
-        <select 
+      <div
+        class="periodo-selector"
+        *ngIf="
+          activeTab === 'gastos' ||
+          activeTab === 'ingresos' ||
+          activeTab === 'balance' ||
+          activeTab === 'traslados'
+        "
+      >
+        <select
           class="selector-periodo"
-          [(ngModel)]="anioSeleccionado" 
-          (change)="onAnioChange()">
+          [(ngModel)]="anioSeleccionado"
+          (change)="onAnioChange()"
+        >
           <option *ngFor="let anio of aniosDisponibles" [value]="anio">
             {{ anio }}
           </option>
         </select>
-        
-        <select 
+
+        <select
           class="selector-periodo"
           [(ngModel)]="mesSeleccionado"
-          (change)="onMesChange()">
+          (change)="onMesChange()"
+        >
           <option *ngFor="let mes of mesesDisponibles" [value]="mes">
             {{ getNombreMes(mes) }}
           </option>
@@ -36,24 +48,35 @@
 
   <!-- TABS -->
   <div class="tabs-container">
-    <button 
-      class="tab-btn" 
+    <button
+      class="tab-btn"
       [class.active]="activeTab === 'gastos'"
-      (click)="changeTab('gastos')">
+      (click)="changeTab('gastos')"
+    >
       <span class="tab-icon">💸</span>
       <span>Gastos</span>
     </button>
-    <button 
-      class="tab-btn" 
+    <button
+      class="tab-btn"
       [class.active]="activeTab === 'ingresos'"
-      (click)="changeTab('ingresos')">
+      (click)="changeTab('ingresos')"
+    >
       <span class="tab-icon">💰</span>
       <span>Ingresos</span>
     </button>
-    <button 
-      class="tab-btn" 
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'traslados'"
+      (click)="changeTab('traslados')"
+    >
+      <span class="tab-icon">🔄</span>
+      <span>Traslados</span>
+    </button>
+    <button
+      class="tab-btn"
       [class.active]="activeTab === 'balance'"
-      (click)="changeTab('balance')">
+      (click)="changeTab('balance')"
+    >
       <span class="tab-icon">📊</span>
       <span>Balance</span>
     </button>

@@ -422,7 +422,11 @@
 .ver-mas-btn {
   width: 100%;
   padding: 12px 24px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-dark) 100%
+  );
   color: white;
   border: none;
   border-radius: 12px;
@@ -459,7 +463,7 @@
 .search-box-movimientos {
   position: relative;
   margin-bottom: 16px;
-  
+
   .search-icon {
     position: absolute;
     left: 16px;
@@ -487,5 +491,106 @@
     &::placeholder {
       color: var(--text-light);
     }
+  }
+}
+// NUEVO: Selector compacto de cuentas
+.cuentas-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0;
+  margin-bottom: 8px;
+
+  // Ocultar scrollbar pero mantener funcionalidad
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.cuenta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
+  }
+
+  &.selected {
+    background: linear-gradient(
+      135deg,
+      var(--primary) 0%,
+      var(--primary-dark) 100%
+    );
+    border-color: var(--primary);
+    color: white;
+
+    .chip-nombre {
+      color: white;
+      font-weight: 600;
+    }
+  }
+}
+
+.chip-icon {
+  font-size: 18px;
+}
+
+.chip-nombre {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+// Fila compacta para fecha y valor
+.form-row-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+// Mejorar visualización de cuenta en lista de movimientos
+.movimiento-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+.meta-fecha {
+  display: inline-flex;
+  align-items: center;
+}
+
+.meta-cuenta {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--bg);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .form-row-compact {
+    grid-template-columns: 1fr;
   }
 }

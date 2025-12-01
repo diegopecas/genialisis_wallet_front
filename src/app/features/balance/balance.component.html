@@ -1,46 +1,51 @@
 <div class="tab-content">
   <!-- CARDS DE BALANCE PRINCIPAL -->
   <div class="balance-summary-card">
-    <h2 class="balance-summary-title">💼 Resumen del Período: {{ periodoTexto }}</h2>
+    <h2 class="balance-summary-title accordion-header" (click)="toggleResumen()">
+      <span class="accordion-icon">{{ expandirResumen ? '▼' : '▶' }}</span>
+      💼 Resumen del Período: {{ periodoTexto }}
+    </h2>
     
-    <!-- Primera fila: Saldo anterior y movimientos del período -->
-    <div class="balance-cards">
-      <div class="balance-card previous">
-        <div class="balance-label">💼 Saldo Anterior</div>
-        <div class="balance-value" [class.negative]="(balance.saldo_anterior || 0) < 0">
-          {{ formatearValor(balance.saldo_anterior || 0) }}
+    <div *ngIf="expandirResumen">
+      <!-- Primera fila: Saldo anterior y movimientos del período -->
+      <div class="balance-cards">
+        <div class="balance-card previous">
+          <div class="balance-label">💼 Saldo Anterior</div>
+          <div class="balance-value" [class.negative]="(balance.saldo_anterior || 0) < 0">
+            {{ formatearValor(balance.saldo_anterior || 0) }}
+          </div>
+          <div class="balance-sublabel" *ngIf="saldoAnteriorData">
+            Acumulado hasta {{ saldoAnteriorData.fecha_corte | date:'dd/MM/yyyy' }}
+          </div>
         </div>
-        <div class="balance-sublabel" *ngIf="saldoAnteriorData">
-          Acumulado hasta {{ saldoAnteriorData.fecha_corte | date:'dd/MM/yyyy' }}
+
+        <div class="balance-card income">
+          <div class="balance-label">💰 Ingresos del Período</div>
+          <div class="balance-value">{{ formatearValor(balance.total_ingresos) }}</div>
         </div>
-      </div>
 
-      <div class="balance-card income">
-        <div class="balance-label">💰 Ingresos del Período</div>
-        <div class="balance-value">{{ formatearValor(balance.total_ingresos) }}</div>
-      </div>
-
-      <div class="balance-card expense">
-        <div class="balance-label">💸 Gastos del Período</div>
-        <div class="balance-value">{{ formatearValor(balance.total_gastos) }}</div>
-      </div>
-    </div>
-
-    <!-- Segunda fila: Balance neto y saldo final -->
-    <div class="balance-cards-bottom">
-      <div class="balance-card net" [class.negative]="balance.balance_neto < 0">
-        <div class="balance-label">🎯 Balance Neto del Período</div>
-        <div class="balance-value">{{ formatearValor(balance.balance_neto) }}</div>
-        <div class="balance-sublabel">
-          {{ balance.balance_neto >= 0 ? 'Superávit' : 'Déficit' }} del período
+        <div class="balance-card expense">
+          <div class="balance-label">💸 Gastos del Período</div>
+          <div class="balance-value">{{ formatearValor(balance.total_gastos) }}</div>
         </div>
       </div>
 
-      <div class="balance-card final" [class.negative]="(balance.saldo_final || 0) < 0">
-        <div class="balance-label">💎 Saldo Final</div>
-        <div class="balance-value">{{ formatearValor(balance.saldo_final || 0) }}</div>
-        <div class="balance-sublabel">
-          Saldo anterior + Balance neto
+      <!-- Segunda fila: Balance neto y saldo final -->
+      <div class="balance-cards-bottom">
+        <div class="balance-card net" [class.negative]="balance.balance_neto < 0">
+          <div class="balance-label">🎯 Balance Neto del Período</div>
+          <div class="balance-value">{{ formatearValor(balance.balance_neto) }}</div>
+          <div class="balance-sublabel">
+            {{ balance.balance_neto >= 0 ? 'Superávit' : 'Déficit' }} del período
+          </div>
+        </div>
+
+        <div class="balance-card final" [class.negative]="(balance.saldo_final || 0) < 0">
+          <div class="balance-label">💎 Saldo Final</div>
+          <div class="balance-value">{{ formatearValor(balance.saldo_final || 0) }}</div>
+          <div class="balance-sublabel">
+            Saldo anterior + Balance neto
+          </div>
         </div>
       </div>
     </div>
@@ -48,26 +53,31 @@
   
   <!-- TOTALES POR DÍA -->
   <div class="totales-dia-section" *ngIf="!loading && totalesPorDia && totalesPorDia.length > 0">
-    <h3 class="section-title">📅 Totales por Día</h3>
+    <h3 class="section-title accordion-header" (click)="toggleTotalesDia()">
+      <span class="accordion-icon">{{ expandirTotalesDia ? '▼' : '▶' }}</span>
+      📅 Totales por Día
+    </h3>
 
-    <!-- NUEVO: Agregado (click) para abrir modal -->
-    <div class="dia-item clickable" 
-         *ngFor="let dia of totalesPorDia"
-         (click)="mostrarMovimientosPorFecha(dia.fecha)">
-      <div class="dia-fecha">
-        <span class="fecha-icon">📅</span>
-        <span class="fecha-text">{{ dia.fecha | date:'dd/MM/yyyy' }}</span>
-      </div>
-      <div class="dia-totales">
-        <div class="dia-total income">
-          <span class="total-label">💰</span>
-          <span class="total-value">{{ formatearValor(dia.total_ingresos) }}</span>
-          <span class="total-count">({{ dia.cantidad_ingresos }})</span>
+    <div *ngIf="expandirTotalesDia">
+      <!-- NUEVO: Agregado (click) para abrir modal -->
+      <div class="dia-item clickable" 
+           *ngFor="let dia of totalesPorDia"
+           (click)="mostrarMovimientosPorFecha(dia.fecha)">
+        <div class="dia-fecha">
+          <span class="fecha-icon">📅</span>
+          <span class="fecha-text">{{ dia.fecha | date:'dd/MM/yyyy' }}</span>
         </div>
-        <div class="dia-total expense">
-          <span class="total-label">💸</span>
-          <span class="total-value">{{ formatearValor(dia.total_gastos) }}</span>
-          <span class="total-count">({{ dia.cantidad_gastos }})</span>
+        <div class="dia-totales">
+          <div class="dia-total income">
+            <span class="total-label">💰</span>
+            <span class="total-value">{{ formatearValor(dia.total_ingresos) }}</span>
+            <span class="total-count">({{ dia.cantidad_ingresos }})</span>
+          </div>
+          <div class="dia-total expense">
+            <span class="total-label">💸</span>
+            <span class="total-value">{{ formatearValor(dia.total_gastos) }}</span>
+            <span class="total-count">({{ dia.cantidad_gastos }})</span>
+          </div>
         </div>
       </div>
     </div>
@@ -75,42 +85,50 @@
 
   <!-- TOTALES POR CATEGORÍA -->
   <div class="totales-categoria-section" *ngIf="!loading">
-    <!-- INGRESOS -->
-    <div class="categoria-card" *ngIf="categoriaIngresos && categoriaIngresos.length > 0">
-      <h3 class="categoria-title income">💰 Ingresos por Categoría</h3>
-      <div class="categoria-list">
-        <!-- NUEVO: Agregado (click) para abrir modal -->
-        <div class="categoria-item clickable" 
-             *ngFor="let cat of categoriaIngresos"
-             (click)="mostrarMovimientosPorCategoria(cat.categoria_nombre, 'Ingreso')">
-          <div class="categoria-info">
-            <span class="categoria-icon">{{ cat.categoria_icono }}</span>
-            <div class="categoria-text">
-              <div class="categoria-name">{{ cat.categoria_nombre }}</div>
-              <div class="categoria-count">{{ cat.cantidad }} movimiento(s)</div>
+    <!-- Título general clickeable -->
+    <h3 class="section-title-general accordion-header" (click)="toggleCategoria()">
+      <span class="accordion-icon">{{ expandirCategoria ? '▼' : '▶' }}</span>
+      Totales por Categoría
+    </h3>
+
+    <div *ngIf="expandirCategoria">
+      <!-- INGRESOS -->
+      <div class="categoria-card" *ngIf="categoriaIngresos && categoriaIngresos.length > 0">
+        <h3 class="categoria-title income">💰 Ingresos por Categoría</h3>
+        <div class="categoria-list">
+          <!-- NUEVO: Agregado (click) para abrir modal -->
+          <div class="categoria-item clickable" 
+               *ngFor="let cat of categoriaIngresos"
+               (click)="mostrarMovimientosPorCategoria(cat.categoria_nombre, 'Ingreso')">
+            <div class="categoria-info">
+              <span class="categoria-icon">{{ cat.categoria_icono }}</span>
+              <div class="categoria-text">
+                <div class="categoria-name">{{ cat.categoria_nombre }}</div>
+                <div class="categoria-count">{{ cat.cantidad }} movimiento(s)</div>
+              </div>
             </div>
+            <div class="categoria-value income">{{ formatearValor(cat.total) }}</div>
           </div>
-          <div class="categoria-value income">{{ formatearValor(cat.total) }}</div>
         </div>
       </div>
-    </div>
 
-    <!-- GASTOS -->
-    <div class="categoria-card" *ngIf="categoriaGastos && categoriaGastos.length > 0">
-      <h3 class="categoria-title expense">💸 Gastos por Categoría</h3>
-      <div class="categoria-list">
-        <!-- NUEVO: Agregado (click) para abrir modal -->
-        <div class="categoria-item clickable" 
-             *ngFor="let cat of categoriaGastos"
-             (click)="mostrarMovimientosPorCategoria(cat.categoria_nombre, 'Gasto')">
-          <div class="categoria-info">
-            <span class="categoria-icon">{{ cat.categoria_icono }}</span>
-            <div class="categoria-text">
-              <div class="categoria-name">{{ cat.categoria_nombre }}</div>
-              <div class="categoria-count">{{ cat.cantidad }} movimiento(s)</div>
+      <!-- GASTOS -->
+      <div class="categoria-card" *ngIf="categoriaGastos && categoriaGastos.length > 0">
+        <h3 class="categoria-title expense">💸 Gastos por Categoría</h3>
+        <div class="categoria-list">
+          <!-- NUEVO: Agregado (click) para abrir modal -->
+          <div class="categoria-item clickable" 
+               *ngFor="let cat of categoriaGastos"
+               (click)="mostrarMovimientosPorCategoria(cat.categoria_nombre, 'Gasto')">
+            <div class="categoria-info">
+              <span class="categoria-icon">{{ cat.categoria_icono }}</span>
+              <div class="categoria-text">
+                <div class="categoria-name">{{ cat.categoria_nombre }}</div>
+                <div class="categoria-count">{{ cat.cantidad }} movimiento(s)</div>
+              </div>
             </div>
+            <div class="categoria-value expense">{{ formatearValor(cat.total) }}</div>
           </div>
-          <div class="categoria-value expense">{{ formatearValor(cat.total) }}</div>
         </div>
       </div>
     </div>
@@ -118,44 +136,52 @@
 
   <!-- DETALLE POR CONCEPTO -->
   <div class="detail-section" *ngIf="!loading">
-    <!-- INGRESOS -->
-    <div class="detail-card" *ngIf="detalleIngresos && detalleIngresos.length > 0">
-      <h3 class="detail-title income">💰 Detalle Ingresos por Concepto</h3>
-      <div class="detail-list">
-        <!-- NUEVO: Agregado (click) para abrir modal -->
-        <div class="detail-item clickable" 
-             *ngFor="let detalle of detalleIngresos"
-             (click)="mostrarMovimientosPorConcepto(detalle.concepto_nombre, 'Ingreso')">
-          <div class="detail-info">
-            <span class="detail-icon">{{ detalle.concepto_icono }}</span>
-            <div class="detail-text">
-              <div class="detail-name">{{ detalle.concepto_nombre }}</div>
-              <div class="detail-categoria">{{ detalle.categoria_nombre }}</div>
-              <div class="detail-count">{{ detalle.cantidad }} movimiento(s)</div>
+    <!-- Título general clickeable -->
+    <h3 class="section-title-general accordion-header" (click)="toggleDetalle()">
+      <span class="accordion-icon">{{ expandirDetalle ? '▼' : '▶' }}</span>
+      Detalle por Concepto
+    </h3>
+
+    <div *ngIf="expandirDetalle">
+      <!-- INGRESOS -->
+      <div class="detail-card" *ngIf="detalleIngresos && detalleIngresos.length > 0">
+        <h3 class="detail-title income">💰 Detalle Ingresos por Concepto</h3>
+        <div class="detail-list">
+          <!-- NUEVO: Agregado (click) para abrir modal -->
+          <div class="detail-item clickable" 
+               *ngFor="let detalle of detalleIngresos"
+               (click)="mostrarMovimientosPorConcepto(detalle.concepto_nombre, 'Ingreso')">
+            <div class="detail-info">
+              <span class="detail-icon">{{ detalle.concepto_icono }}</span>
+              <div class="detail-text">
+                <div class="detail-name">{{ detalle.concepto_nombre }}</div>
+                <div class="detail-categoria">{{ detalle.categoria_nombre }}</div>
+                <div class="detail-count">{{ detalle.cantidad }} movimiento(s)</div>
+              </div>
             </div>
+            <div class="detail-value income">{{ formatearValor(detalle.total) }}</div>
           </div>
-          <div class="detail-value income">{{ formatearValor(detalle.total) }}</div>
         </div>
       </div>
-    </div>
 
-    <!-- GASTOS -->
-    <div class="detail-card" *ngIf="detalleGastos && detalleGastos.length > 0">
-      <h3 class="detail-title expense">💸 Detalle Gastos por Concepto</h3>
-      <div class="detail-list">
-        <!-- NUEVO: Agregado (click) para abrir modal -->
-        <div class="detail-item clickable" 
-             *ngFor="let detalle of detalleGastos"
-             (click)="mostrarMovimientosPorConcepto(detalle.concepto_nombre, 'Gasto')">
-          <div class="detail-info">
-            <span class="detail-icon">{{ detalle.concepto_icono }}</span>
-            <div class="detail-text">
-              <div class="detail-name">{{ detalle.concepto_nombre }}</div>
-              <div class="detail-categoria">{{ detalle.categoria_nombre }}</div>
-              <div class="detail-count">{{ detalle.cantidad }} movimiento(s)</div>
+      <!-- GASTOS -->
+      <div class="detail-card" *ngIf="detalleGastos && detalleGastos.length > 0">
+        <h3 class="detail-title expense">💸 Detalle Gastos por Concepto</h3>
+        <div class="detail-list">
+          <!-- NUEVO: Agregado (click) para abrir modal -->
+          <div class="detail-item clickable" 
+               *ngFor="let detalle of detalleGastos"
+               (click)="mostrarMovimientosPorConcepto(detalle.concepto_nombre, 'Gasto')">
+            <div class="detail-info">
+              <span class="detail-icon">{{ detalle.concepto_icono }}</span>
+              <div class="detail-text">
+                <div class="detail-name">{{ detalle.concepto_nombre }}</div>
+                <div class="detail-categoria">{{ detalle.categoria_nombre }}</div>
+                <div class="detail-count">{{ detalle.cantidad }} movimiento(s)</div>
+              </div>
             </div>
+            <div class="detail-value expense">{{ formatearValor(detalle.total) }}</div>
           </div>
-          <div class="detail-value expense">{{ formatearValor(detalle.total) }}</div>
         </div>
       </div>
     </div>
@@ -163,16 +189,22 @@
 
   <!-- GRÁFICO -->
   <div class="chart-card" *ngIf="mostrarGrafico && !loading">
-    <h3 class="chart-title">📈 Evolución Mensual</h3>
-    <div class="chart-container">
+    <h3 class="chart-title accordion-header" (click)="toggleGraficoEvolucion()">
+      <span class="accordion-icon">{{ expandirGraficoEvolucion ? '▼' : '▶' }}</span>
+      📈 Evolución Mensual
+    </h3>
+    <div class="chart-container" *ngIf="expandirGraficoEvolucion">
       <canvas #chartCanvas></canvas>
     </div>
   </div>
   
   <!-- GRÁFICO DE BARRAS POR CATEGORÍA -->
   <div class="chart-card" *ngIf="!loading && datosGraficoCategoria && datosGraficoCategoria.length > 0">
-    <h3 class="chart-title">📊 Ingresos y Gastos por Categoría</h3>
-    <div class="chart-container">
+    <h3 class="chart-title accordion-header" (click)="toggleGraficoCategoria()">
+      <span class="accordion-icon">{{ expandirGraficoCategoria ? '▼' : '▶' }}</span>
+      📊 Ingresos y Gastos por Categoría
+    </h3>
+    <div class="chart-container" *ngIf="expandirGraficoCategoria">
       <canvas #chartBarrasCanvas></canvas>
     </div>
   </div>

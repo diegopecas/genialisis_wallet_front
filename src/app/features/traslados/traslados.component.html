@@ -1,0 +1,172 @@
+<div class="tab-content">
+  <!-- FORMULARIO -->
+  <div class="form-card">
+    <h2 class="form-title">🔄 Registrar Traslado</h2>
+
+    <form [formGroup]="trasladoForm" (ngSubmit)="onSubmit()">
+      <!-- FECHA Y VALOR EN UNA FILA -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">📅 Fecha</label>
+          <input type="date" formControlName="fecha" class="form-input" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">💵 Valor</label>
+          <input 
+            type="text" 
+            [value]="valorFormateado" 
+            (input)="formatearValorInput($event)"
+            (keypress)="validarTeclaNumero($event)"
+            class="form-input" 
+            placeholder="Ej: 50.000"
+            inputmode="numeric"
+          />
+        </div>
+      </div>
+
+      <!-- DESDE (ORIGEN) -->
+      <div class="form-group">
+        <label class="form-label">📤 Desde (Cuenta Origen)</label>
+        <div class="cuentas-grid">
+          <div 
+            *ngFor="let cuenta of cuentas" 
+            class="cuenta-card"
+            [class.selected]="trasladoForm.get('cuenta_origen_id')?.value == cuenta.id"
+            [class.disabled]="trasladoForm.get('cuenta_destino_id')?.value == cuenta.id"
+            (click)="trasladoForm.patchValue({ cuenta_origen_id: cuenta.id })">
+            <div class="cuenta-icon-large">{{ cuenta.icono }}</div>
+            <div class="cuenta-nombre">{{ cuenta.nombre }}</div>
+            <div class="cuenta-saldo" [class.negative]="cuenta.saldo_actual < 0">
+              {{ formatearValor(cuenta.saldo_actual) }}
+            </div>
+          </div>
+        </div>
+        <div class="form-error" *ngIf="trasladoForm.get('cuenta_origen_id')?.invalid && trasladoForm.get('cuenta_origen_id')?.touched">
+          Selecciona una cuenta de origen
+        </div>
+      </div>
+
+      <!-- FLECHA VISUAL -->
+      <div class="arrow-separator">
+        <div class="arrow-icon">⬇️</div>
+      </div>
+
+      <!-- HACIA (DESTINO) -->
+      <div class="form-group">
+        <label class="form-label">📥 Hacia (Cuenta Destino)</label>
+        <div class="cuentas-grid">
+          <div 
+            *ngFor="let cuenta of cuentas" 
+            class="cuenta-card"
+            [class.selected]="trasladoForm.get('cuenta_destino_id')?.value == cuenta.id"
+            [class.disabled]="trasladoForm.get('cuenta_origen_id')?.value == cuenta.id"
+            (click)="trasladoForm.get('cuenta_origen_id')?.value != cuenta.id && trasladoForm.patchValue({ cuenta_destino_id: cuenta.id })">
+            <div class="cuenta-icon-large">{{ cuenta.icono }}</div>
+            <div class="cuenta-nombre">{{ cuenta.nombre }}</div>
+            <div class="cuenta-saldo" [class.negative]="cuenta.saldo_actual < 0">
+              {{ formatearValor(cuenta.saldo_actual) }}
+            </div>
+          </div>
+        </div>
+        <div class="form-error" *ngIf="trasladoForm.get('cuenta_destino_id')?.invalid && trasladoForm.get('cuenta_destino_id')?.touched">
+          Selecciona una cuenta de destino
+        </div>
+      </div>
+
+      <!-- NOTAS (opcional) -->
+      <div class="form-group">
+        <label class="form-label">
+          📝 Notas
+          <span class="optional">(opcional)</span>
+        </label>
+        <textarea formControlName="notas" class="form-input form-textarea" placeholder="Ej: Consignación al banco" rows="2"></textarea>
+      </div>
+
+      <!-- BOTÓN GUARDAR -->
+      <button type="submit" class="submit-btn" [disabled]="!trasladoForm.valid || loading || !conceptoTraslado">
+        {{ loading ? 'Guardando...' : '💾 Guardar Traslado' }}
+      </button>
+    </form>
+  </div>
+
+  <!-- ÚLTIMOS TRASLADOS -->
+  <div class="movimientos-card" *ngIf="traslados.length > 0">
+    <h3 class="movimientos-title">📋 Últimos Traslados</h3>
+
+    <!-- BUSCADOR -->
+    <div class="search-box-movimientos">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        class="search-input" 
+        placeholder="Buscar por cuenta o notas..." 
+        [(ngModel)]="searchMovimientos"
+        [ngModelOptions]="{standalone: true}" 
+        (input)="buscarMovimientos($event)" 
+      />
+    </div>
+
+    <div class="traslado-item" *ngFor="let traslado of trasladosFiltrados">
+      <div class="traslado-visual">
+        <div class="traslado-origen">
+          <div class="cuenta-badge origen">
+            <span class="badge-icon">{{ traslado.cuenta_origen_icono }}</span>
+            <span class="badge-nombre">{{ traslado.cuenta_origen_nombre }}</span>
+          </div>
+        </div>
+        
+        <div class="traslado-arrow">
+          <span class="arrow-large">→</span>
+          <div class="traslado-valor">{{ formatearValor(traslado.valor) }}</div>
+        </div>
+        
+        <div class="traslado-destino">
+          <div class="cuenta-badge destino">
+            <span class="badge-icon">{{ traslado.cuenta_destino_icono }}</span>
+            <span class="badge-nombre">{{ traslado.cuenta_destino_nombre }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="traslado-info-bottom">
+        <div class="traslado-fecha">
+          📅 {{ traslado.fecha | date:'dd/MM/yyyy' }}
+          <span class="traslado-usuario" *ngIf="traslado.usuario_nombre">• {{ traslado.usuario_nombre }}</span>
+        </div>
+        <div class="traslado-notas" *ngIf="traslado.notas">💬 {{ traslado.notas }}</div>
+      </div>
+
+      <div class="movimiento-actions">
+        <button class="edit-btn" (click)="abrirModalEditar(traslado)" title="Editar">✏️</button>
+        <button class="delete-btn" (click)="eliminarTraslado(traslado.id)" title="Eliminar">🗑️</button>
+      </div>
+    </div>
+
+    <!-- BOTÓN CARGAR TODOS -->
+    <div class="ver-mas-container" *ngIf="hayMasRegistros && searchMovimientos.trim() === ''">
+      <button class="ver-mas-btn" (click)="cargarTodosDelPeriodo()" [disabled]="loading">
+        {{ loading ? 'Cargando...' : 'Cargar todos del periodo' }}
+      </button>
+      <p class="registros-info">Mostrando {{ totalRegistrosCargados }} registros</p>
+    </div>
+
+    <!-- SIN RESULTADOS -->
+    <div class="no-results" *ngIf="trasladosFiltrados.length === 0 && searchMovimientos.trim() !== ''">
+      No se encontraron traslados con "{{ searchMovimientos }}"
+    </div>
+  </div>
+
+  <div class="empty-message" *ngIf="traslados.length === 0 && !loading">
+    No hay traslados registrados
+  </div>
+
+  <!-- MODAL DE EDICIÓN -->
+  <app-editar-movimiento-modal
+    [movimiento]="movimientoAEditar"
+    [isOpen]="isModalEditarOpen"
+    [circuloId]="circuloId"
+    (close)="cerrarModalEditar()"
+    (save)="guardarCambios($event)">
+  </app-editar-movimiento-modal>
+</div>

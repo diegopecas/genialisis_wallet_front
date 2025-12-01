@@ -4,36 +4,49 @@
     <h2 class="form-title">💸 Registrar Gasto</h2>
 
     <form [formGroup]="gastoForm" (ngSubmit)="onSubmit()">
-      <!-- FECHA -->
-      <div class="form-group">
-        <label class="form-label">Fecha</label>
-        <input type="date" formControlName="fecha" class="form-input" />
-        <div class="form-error" *ngIf="gastoForm.get('fecha')?.invalid && gastoForm.get('fecha')?.touched">
-          Fecha es requerida
+      <!-- FECHA Y VALOR EN FILA -->
+      <div class="form-row-compact">
+        <div class="form-group">
+          <label class="form-label">📅 Fecha</label>
+          <input type="date" formControlName="fecha" class="form-input" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">💵 Valor</label>
+          <input 
+            type="text" 
+            [value]="valorFormateado" 
+            (input)="formatearValorInput($event)"
+            (keypress)="validarTeclaNumero($event)"
+            class="form-input" 
+            placeholder="Ej: 50.000"
+            inputmode="numeric"
+          />
         </div>
       </div>
 
-      <!-- VALOR -->
+      <!-- SELECTOR DE CUENTA COMPACTO -->
       <div class="form-group">
-        <label class="form-label">Valor</label>
-        <input 
-          type="text" 
-          [value]="valorFormateado" 
-          (input)="formatearValorInput($event)"
-          (keypress)="validarTeclaNumero($event)"
-          class="form-input" 
-          placeholder="Ej: 50.000"
-          inputmode="numeric"
-        />
-        <div class="form-error" *ngIf="gastoForm.get('valor')?.invalid && gastoForm.get('valor')?.touched">
-          Valor es requerido
+        <label class="form-label">💳 Cuenta (Origen del Gasto)</label>
+        <div class="cuentas-selector">
+          <div 
+            *ngFor="let cuenta of cuentas" 
+            class="cuenta-chip"
+            [class.selected]="gastoForm.get('cuenta_id')?.value == cuenta.id"
+            (click)="seleccionarCuenta(cuenta.id)">
+            <span class="chip-icon">{{ cuenta.icono }}</span>
+            <span class="chip-nombre">{{ cuenta.nombre }}</span>
+          </div>
+        </div>
+        <div class="form-error" *ngIf="gastoForm.get('cuenta_id')?.invalid && gastoForm.get('cuenta_id')?.touched">
+          Selecciona una cuenta
         </div>
       </div>
 
-      <!-- DETALLE (siempre opcional) -->
+      <!-- DETALLE (opcional) -->
       <div class="form-group" *ngIf="conceptoSeleccionado">
         <label class="form-label">
-          Detalle
+          📝 Detalle
           <span class="optional">(opcional)</span>
         </label>
         <input type="text" formControlName="detalle" class="form-input" placeholder="Ej: Supermercado Éxito" />
@@ -53,18 +66,16 @@
         </button>
       </div>
 
-      <!-- SELECTOR DE CONCEPTOS (solo visible si no hay selección) -->
+      <!-- SELECTOR DE CONCEPTOS -->
       <div class="conceptos-section" *ngIf="!conceptoSeleccionado">
-        <label class="form-label">Concepto *</label>
+        <label class="form-label">🏷️ Concepto *</label>
 
-        <!-- BUSCADOR -->
         <div class="search-box">
           <span class="search-icon">🔍</span>
           <input type="text" class="search-input" placeholder="Buscar concepto..." [(ngModel)]="searchTerm"
             [ngModelOptions]="{standalone: true}" (input)="buscarConceptos($event)" />
         </div>
 
-        <!-- CONCEPTOS EN GRID COMPACTO -->
         <div class="conceptos-grid" *ngIf="!loading && conceptosFiltrados.length > 0">
           <div *ngFor="let item of conceptosFiltrados" class="concepto-card" (click)="seleccionarConcepto(item)">
             <span class="concepto-icon">{{ item.concepto.icono }}</span>
@@ -86,7 +97,7 @@
 
       <!-- BOTÓN GUARDAR -->
       <button type="submit" class="submit-btn" [disabled]="!gastoForm.valid || loading">
-        {{ loading ? 'Guardando...' : 'Guardar Gasto' }}
+        {{ loading ? 'Guardando...' : '💾 Guardar Gasto' }}
       </button>
     </form>
   </div>
@@ -95,13 +106,12 @@
   <div class="movimientos-card" *ngIf="gastos.length > 0">
     <h3 class="movimientos-title">📋 Últimos Gastos</h3>
 
-    <!-- BUSCADOR DE MOVIMIENTOS -->
     <div class="search-box-movimientos">
       <span class="search-icon">🔍</span>
       <input 
         type="text" 
         class="search-input" 
-        placeholder="Buscar por concepto, categoría o detalle..." 
+        placeholder="Buscar..." 
         [(ngModel)]="searchMovimientos"
         [ngModelOptions]="{standalone: true}" 
         (input)="buscarMovimientos($event)" 
@@ -114,9 +124,9 @@
           <span class="movimiento-icon">{{ gasto.concepto_icono }}</span>
           <div class="movimiento-text">
             <div class="movimiento-concepto">{{ gasto.concepto_nombre }}</div>
-            <div class="movimiento-fecha">
-              {{ gasto.fecha | date:'dd/MM/yyyy' }}
-              <span class="movimiento-usuario" *ngIf="gasto.usuario_nombre">• {{ gasto.usuario_nombre }}</span>
+            <div class="movimiento-meta">
+              <span class="meta-fecha">{{ gasto.fecha | date:'dd/MM/yyyy' }}</span>
+              <span class="meta-cuenta" *ngIf="gasto.cuenta_icono">{{ gasto.cuenta_icono }} {{ gasto.cuenta_nombre }}</span>
             </div>
             <div class="movimiento-detalle" *ngIf="gasto.detalle">{{ gasto.detalle }}</div>
           </div>
@@ -129,7 +139,6 @@
       </div>
     </div>
 
-    <!-- BOTÓN CARGAR TODOS -->
     <div class="ver-mas-container" *ngIf="hayMasRegistros && searchMovimientos.trim() === ''">
       <button class="ver-mas-btn" (click)="cargarTodosDelPeriodo()" [disabled]="loading">
         {{ loading ? 'Cargando...' : 'Cargar todos del periodo' }}
@@ -137,7 +146,6 @@
       <p class="registros-info">Mostrando {{ totalRegistrosCargados }} registros</p>
     </div>
 
-    <!-- MENSAJE SIN RESULTADOS DE BÚSQUEDA -->
     <div class="no-results" *ngIf="gastosFiltrados.length === 0 && searchMovimientos.trim() !== ''">
       No se encontraron gastos con "{{ searchMovimientos }}"
     </div>
@@ -147,7 +155,6 @@
     No hay gastos registrados
   </div>
 
-  <!-- MODAL DE EDICIÓN -->
   <app-editar-movimiento-modal
     [movimiento]="movimientoAEditar"
     [isOpen]="isModalEditarOpen"

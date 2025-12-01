@@ -1,0 +1,127 @@
+<!-- cuentas.component.html -->
+<div class="cuentas-container">
+  <!-- HEADER -->
+  <div class="header">
+    <h1>💳 Mis Cuentas</h1>
+    <button class="btn-primary" (click)="abrirFormularioNueva()" *ngIf="!modoEdicion">
+      + Nueva Cuenta
+    </button>
+  </div>
+
+  <!-- LOADING -->
+  <div *ngIf="loading" class="loading">
+    <p>Cargando cuentas...</p>
+  </div>
+
+  <!-- FORMULARIO DE CREACIÓN/EDICIÓN -->
+  <div *ngIf="modoEdicion" class="form-modal">
+    <div class="form-overlay" (click)="cancelarEdicion()"></div>
+    <div class="form-container">
+      <h2>{{ cuentaEditando ? 'Editar Cuenta' : 'Nueva Cuenta' }}</h2>
+
+      <form (ngSubmit)="guardarCuenta()">
+        <!-- Nombre -->
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.nombre" 
+            name="nombre"
+            placeholder="Ej: Efectivo, Bancolombia"
+            required>
+        </div>
+
+        <!-- Icono -->
+        <div class="form-group">
+          <label>Icono</label>
+          <div class="iconos-grid">
+            <button 
+              type="button"
+              *ngFor="let icono of iconosDisponibles" 
+              class="icono-btn"
+              [class.selected]="formData.icono === icono"
+              (click)="seleccionarIcono(icono)">
+              {{ icono }}
+            </button>
+          </div>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.icono" 
+            name="icono"
+            placeholder="O escribe tu propio emoji"
+            maxlength="10">
+        </div>
+
+        <!-- Color -->
+        <div class="form-group">
+          <label>Color</label>
+          <input 
+            type="color" 
+            [(ngModel)]="formData.color" 
+            name="color">
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group">
+          <label>Descripción (opcional)</label>
+          <textarea 
+            [(ngModel)]="formData.descripcion" 
+            name="descripcion"
+            placeholder="Descripción de la cuenta"
+            rows="3"></textarea>
+        </div>
+
+        <!-- Botones -->
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancelarEdicion()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary">
+            {{ cuentaEditando ? 'Actualizar' : 'Crear' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LISTA DE CUENTAS -->
+  <div *ngIf="!loading && cuentas.length === 0" class="empty-state">
+    <p>No tienes cuentas registradas</p>
+    <button class="btn-primary" (click)="abrirFormularioNueva()">
+      Crear primera cuenta
+    </button>
+  </div>
+
+  <div *ngIf="!loading && cuentas.length > 0" class="cuentas-grid">
+    <div *ngFor="let cuenta of cuentas" class="cuenta-card">
+      <!-- Header -->
+      <div class="cuenta-header" [style.background-color]="cuenta.color">
+        <span class="cuenta-icono">{{ cuenta.icono }}</span>
+        <div class="cuenta-acciones">
+          <button class="btn-icon" (click)="editarCuenta(cuenta)" title="Editar">
+            ✏️
+          </button>
+          <button class="btn-icon" (click)="eliminarCuenta(cuenta)" title="Eliminar">
+            🗑️
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenido -->
+      <div class="cuenta-body">
+        <h3>{{ cuenta.nombre }}</h3>
+        <p *ngIf="cuenta.descripcion" class="descripcion">{{ cuenta.descripcion }}</p>
+        
+        <div class="saldo-container">
+          <span class="label">Saldo actual:</span>
+          <span 
+            class="saldo" 
+            [class.positivo]="cuenta.saldo_actual >= 0"
+            [class.negativo]="cuenta.saldo_actual < 0">
+            {{ formatearSaldo(cuenta.saldo_actual) }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

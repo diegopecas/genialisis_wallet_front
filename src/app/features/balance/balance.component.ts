@@ -60,11 +60,20 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   modalSubtitulo: string = '';
   isModalOpen: boolean = false;
   
+  // Control de acordeón de secciones
+  expandirResumen: boolean = true;
+  expandirTotalesDia: boolean = false;
+  expandirCategoria: boolean = false;
+  expandirDetalle: boolean = false;
+  expandirGraficoEvolucion: boolean = false;
+  expandirGraficoCategoria: boolean = false;
+  
   loading = false;
   circuloId: number = 0;
   chart: Chart | null = null;
   chartBarras: Chart | null = null;
   datosGraficoCategoria: GraficoCategoria[] = [];
+  datosEvolucion: EvolucionMes[] = [];
   periodoTextoCalculado: string = '';
   
   // Periodo actual (viene del servicio compartido)
@@ -239,7 +248,8 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     this.movimientosService.getGraficoCategoria(this.circuloId, anio, mes).subscribe({
       next: (response: any) => {
         this.datosGraficoCategoria = response?.data?.categorias || [];
-        if (this.datosGraficoCategoria && this.datosGraficoCategoria.length > 0) {
+        // Solo crear el gráfico si está expandido
+        if (this.expandirGraficoCategoria && this.datosGraficoCategoria && this.datosGraficoCategoria.length > 0) {
           setTimeout(() => this.actualizarGraficoBarras(), 200);
         }
       },
@@ -429,13 +439,15 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   cargarEvolucion(anio: number): void {
     this.movimientosService.getEvolucion(this.circuloId, anio).subscribe({
       next: (response) => {
-        const datos = response?.data?.datos || [];
-        if (datos.length > 0) {
-          this.actualizarGrafico(datos);
+        this.datosEvolucion = response?.data?.datos || [];
+        // Solo crear el gráfico si está expandido
+        if (this.expandirGraficoEvolucion && this.datosEvolucion.length > 0) {
+          this.actualizarGrafico(this.datosEvolucion);
         }
       },
       error: (error) => {
         console.error('Error cargando evolución:', error);
+        this.datosEvolucion = [];
       }
     });
   }
@@ -561,5 +573,46 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   // Getter que retorna propiedad precalculada
   get periodoTexto(): string {
     return this.periodoTextoCalculado;
+  }
+
+  // ========================================
+  // MÉTODOS TOGGLE PARA ACORDEÓN
+  // ========================================
+  toggleResumen(): void {
+    this.expandirResumen = !this.expandirResumen;
+  }
+
+  toggleTotalesDia(): void {
+    this.expandirTotalesDia = !this.expandirTotalesDia;
+  }
+
+  toggleCategoria(): void {
+    this.expandirCategoria = !this.expandirCategoria;
+  }
+
+  toggleDetalle(): void {
+    this.expandirDetalle = !this.expandirDetalle;
+  }
+
+  toggleGraficoEvolucion(): void {
+    this.expandirGraficoEvolucion = !this.expandirGraficoEvolucion;
+    // Si se expande
+    if (this.expandirGraficoEvolucion && !this.mes) {
+      // Si ya hay datos, recrear el gráfico
+      if (this.datosEvolucion && this.datosEvolucion.length > 0) {
+        setTimeout(() => this.actualizarGrafico(this.datosEvolucion), 100);
+      } else {
+        // Si no hay datos, cargarlos
+        setTimeout(() => this.cargarEvolucion(this.anio), 100);
+      }
+    }
+  }
+
+  toggleGraficoCategoria(): void {
+    this.expandirGraficoCategoria = !this.expandirGraficoCategoria;
+    // Si se expande y hay datos, recrear el gráfico
+    if (this.expandirGraficoCategoria && this.datosGraficoCategoria && this.datosGraficoCategoria.length > 0) {
+      setTimeout(() => this.actualizarGraficoBarras(), 100);
+    }
   }
 }

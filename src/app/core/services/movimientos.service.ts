@@ -1,7 +1,7 @@
 /**
- * MovimientosService
+ * MovimientosService - ACTUALIZADO CON SISTEMA DE CUENTAS
  * Servicio para CRUD de movimientos y consultas de balance
- * Compatible con versiones con y sin el endpoint de saldo anterior
+ * Soporta: Ingresos, Gastos y Traslados entre cuentas
  */
 
 import { Injectable } from '@angular/core';
@@ -44,6 +44,21 @@ export class MovimientosService {
 
   /**
    * Crear nuevo movimiento
+   * 
+   * IMPORTANTE - Campos de cuentas según tipo:
+   * 
+   * Para INGRESO (tipo_mov_id=1):
+   *   - Incluir: cuenta_id
+   *   - NO incluir: cuenta_origen_id, cuenta_destino_id
+   * 
+   * Para GASTO (tipo_mov_id=2):
+   *   - Incluir: cuenta_id
+   *   - NO incluir: cuenta_origen_id, cuenta_destino_id
+   * 
+   * Para TRASLADO (tipo_mov_id=3):
+   *   - Incluir: cuenta_origen_id, cuenta_destino_id
+   *   - NO incluir: cuenta_id
+   *   - Validar: cuenta_origen_id !== cuenta_destino_id
    */
   create(data: CreateMovimientoRequest): Observable<MovimientoResponse> {
     return this.apiService.post<MovimientoResponse>('movimientos', data);
@@ -52,8 +67,10 @@ export class MovimientosService {
   /**
    * Actualizar movimiento existente
    * 
+   * NOTA: Ahora permite actualizar cuentas
+   * 
    * @param id ID del movimiento a actualizar
-   * @param data Datos a actualizar (todos opcionales excepto circulos_ids si se envía)
+   * @param data Datos a actualizar (todos opcionales)
    */
   update(id: number, data: Partial<CreateMovimientoRequest>): Observable<MovimientoResponse> {
     return this.apiService.put<MovimientoResponse>(`movimientos/${id}`, data);
@@ -62,7 +79,7 @@ export class MovimientosService {
   /**
    * Obtener movimientos con filtros
    * 
-   * @param tipoMovId Tipo de movimiento (1=Ingreso, 2=Gasto, null=Todos)
+   * @param tipoMovId Tipo de movimiento (1=Ingreso, 2=Gasto, 3=Traslado, null=Todos)
    * @param circuloId ID del círculo (opcional)
    * @param anio Año (opcional)
    * @param mes Mes (opcional)
@@ -93,6 +110,11 @@ export class MovimientosService {
 
   /**
    * Obtener movimiento por ID
+   * 
+   * NOTA: La respuesta incluye información de cuentas según tipo:
+   * - Ingresos/Gastos: cuenta_id, cuenta_nombre, cuenta_icono
+   * - Traslados: cuenta_origen_id, cuenta_origen_nombre, cuenta_origen_icono,
+   *              cuenta_destino_id, cuenta_destino_nombre, cuenta_destino_icono
    */
   getById(id: number): Observable<MovimientoResponse> {
     return this.apiService.get<MovimientoResponse>(`movimientos/${id}`);
@@ -107,6 +129,9 @@ export class MovimientosService {
 
   /**
    * Obtener balance (totales)
+   * 
+   * NOTA: Los traslados NO afectan el balance
+   * (solo se suman ingresos y gastos)
    */
   getBalance(
     circuloId?: number,
@@ -126,7 +151,6 @@ export class MovimientosService {
    * Obtener saldo del mes anterior
    * NOTA: Este método retorna un observable vacío si el endpoint no existe
    */
-
   getSaldoAnterior(
     circuloId?: number,
     anio?: number,
@@ -251,7 +275,7 @@ export class MovimientosService {
    * Obtener periodos disponibles (años y meses con registros)
    * 
    * @param circuloId ID del círculo (opcional)
-   * @param tipoMovId Tipo de movimiento (1=Ingreso, 2=Gasto, null=Todos)
+   * @param tipoMovId Tipo de movimiento (1=Ingreso, 2=Gasto, 3=Traslado, null=Todos)
    */
   getPeriodosDisponibles(
     circuloId?: number,

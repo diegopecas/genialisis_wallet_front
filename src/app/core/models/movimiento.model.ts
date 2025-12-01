@@ -1,5 +1,6 @@
 /**
- * Modelo: Movimiento con campos de saldo no opcionales
+ * Modelo: Movimiento - ACTUALIZADO CON SISTEMA DE CUENTAS
+ * Ahora soporta: Ingresos, Gastos y Traslados entre cuentas
  */
 
 export interface Movimiento {
@@ -13,13 +14,28 @@ export interface Movimiento {
   categoria_icono: string;
   categoria_color: string;
   tipo_mov_id: number;
-  tipo_movimiento: 'Ingreso' | 'Gasto';
+  tipo_movimiento: 'Ingreso' | 'Gasto' | 'Traslado';
   tipo_icono: string;
   valor: number;
   fecha: string;
   detalle?: string;
   notas?: string;
   creado_por_ia: boolean;
+  
+  // === CAMPOS DE CUENTAS ===
+  // Para INGRESO/GASTO (tipo_mov_id 1 o 2)
+  cuenta_id?: number;
+  cuenta_nombre?: string;
+  cuenta_icono?: string;
+  
+  // Para TRASLADO (tipo_mov_id 3)
+  cuenta_origen_id?: number;
+  cuenta_origen_nombre?: string;
+  cuenta_origen_icono?: string;
+  cuenta_destino_id?: number;
+  cuenta_destino_nombre?: string;
+  cuenta_destino_icono?: string;
+  
   circulos_nombres: string;
   es_compartido: boolean;
   created_at: string;
@@ -33,6 +49,14 @@ export interface CreateMovimientoRequest {
   circulos_ids: number[];
   detalle?: string;
   notas?: string;
+  
+  // === CAMPOS DE CUENTAS ===
+  // Para INGRESO/GASTO: enviar cuenta_id
+  cuenta_id?: number;
+  
+  // Para TRASLADO: enviar cuenta_origen_id + cuenta_destino_id
+  cuenta_origen_id?: number;
+  cuenta_destino_id?: number;
 }
 
 export interface MovimientosResponse {
@@ -85,7 +109,7 @@ export interface DetalleConcepto {
   concepto_nombre: string;
   concepto_icono: string;
   categoria_nombre: string;
-  tipo_movimiento: 'Ingreso' | 'Gasto';
+  tipo_movimiento: 'Ingreso' | 'Gasto' | 'Traslado';
   total: number;
   cantidad: number;
 }
@@ -153,7 +177,7 @@ export interface TotalPorCategoria {
   categoria_nombre: string;
   categoria_icono: string;
   categoria_color: string;
-  tipo_movimiento: 'Ingreso' | 'Gasto';
+  tipo_movimiento: 'Ingreso' | 'Gasto' | 'Traslado';
   cantidad: number;
   total: number;
 }
@@ -181,4 +205,11 @@ export interface GraficoCategoriaResponse {
   data: {
     categorias: GraficoCategoria[];
   };
+}
+
+// === ENUM PARA TIPOS DE MOVIMIENTO ===
+export enum TipoMovimiento {
+  INGRESO = 1,
+  GASTO = 2,
+  TRASLADO = 3
 }

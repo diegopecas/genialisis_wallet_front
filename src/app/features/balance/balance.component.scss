@@ -545,3 +545,41 @@
   color: #757575;
   font-size: 0.9375rem;
 }
+
+// ========================================
+// ESTILOS PARA ACORDEÓN
+// ========================================
+.accordion-header {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #ff9800;
+  }
+
+  &:active {
+    transform: scale(0.99);
+  }
+}
+
+.accordion-icon {
+  display: inline-block;
+  font-size: 0.875rem;
+  transition: transform 0.2s;
+  min-width: 1rem;
+}
+
+.section-title-general {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 1rem 0;
+  padding: 1.25rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}

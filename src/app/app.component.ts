@@ -1,5 +1,5 @@
 /**
- * AppComponent
+ * AppComponent - ACTUALIZADO CON TAB TRASLADOS
  * Componente principal con header, tabs y router
  */
 
@@ -106,6 +106,8 @@ export class AppComponent implements OnInit {
       tipoMovId = 2;
     } else if (this.activeTab === "ingresos") {
       tipoMovId = 1;
+    } else if (this.activeTab === "traslados") {
+      tipoMovId = 3; // ⬅️ NUEVO: Tipo 3 para traslados
     }
     // Para balance, no filtramos por tipo (undefined = todos)
 
@@ -248,12 +250,16 @@ export class AppComponent implements OnInit {
     return mesEncontrado ? mesEncontrado.nombre : mes.toString();
   }
 
+  /**
+   * Cambiar tab activo
+   * ACTUALIZADO: Ahora incluye tab "traslados"
+   */
   changeTab(tab: string): void {
     this.activeTab = tab;
     this.router.navigate([`/${tab}`]);
 
     // Recargar periodos disponibles cuando cambia el tab
-    if (tab === "gastos" || tab === "ingresos" || tab === "balance") {
+    if (tab === "gastos" || tab === "ingresos" || tab === "balance" || tab === "traslados") {
       this.cargarPeriodosDisponibles();
     }
   }
