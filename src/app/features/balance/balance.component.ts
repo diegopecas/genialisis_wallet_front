@@ -73,6 +73,7 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   modalMovimientos: Movimiento[] = [];
   modalTitulo: string = '';
   modalSubtitulo: string = '';
+  modalCuentaId: number | null = null; // NUEVO: ID de la cuenta del modal
   isModalOpen: boolean = false;
   
   // Control de acordeón de secciones
@@ -197,9 +198,15 @@ export class BalanceComponent implements OnInit, AfterViewInit {
       new Promise<void>((resolve) => {
         this.movimientosService.getSaldoAnterior(this.circuloId, anio, mes).subscribe({
           next: (response) => {
-            if (response?.data?.saldo_mes_anterior) {
-              this.saldoAnteriorData = response.data.saldo_mes_anterior;
-              this.balance.saldo_anterior = this.saldoAnteriorData.saldo_anterior || 0;
+            if (response?.data) {
+              const data = response.data as any;
+              this.saldoAnteriorData = {
+                saldo_anterior: data.saldo_anterior || 0,
+                total_ingresos_acumulados: data.total_ingresos || 0,
+                total_gastos_acumulados: data.total_gastos || 0,
+                fecha_corte: data.periodo_hasta || ''
+              };
+              this.balance.saldo_anterior = this.saldoAnteriorData.saldo_anterior;
             } else {
               this.balance.saldo_anterior = 0;
             }
@@ -342,16 +349,6 @@ export class BalanceComponent implements OnInit, AfterViewInit {
       // IMPORTANTE: Convertir valor a número (puede venir como string o number)
       const valor = typeof mov.valor === 'string' ? parseFloat(mov.valor) : (mov.valor || 0);
       
-      console.log(`\n📝 Movimiento #${index + 1}:`, {
-        tipo: mov.tipo_movimiento,
-        valor: mov.valor,
-        cuenta_id: mov.cuenta_id,
-        cuenta_nombre: mov.cuenta_nombre,
-        cuenta_origen_id: mov.cuenta_origen_id,
-        cuenta_origen_nombre: mov.cuenta_origen_nombre,
-        cuenta_destino_id: mov.cuenta_destino_id,
-        cuenta_destino_nombre: mov.cuenta_destino_nombre
-      });
 
       // Para ingresos y gastos PUROS (sin traslados)
       if (mov.cuenta_id) {
@@ -496,6 +493,7 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     );
     this.modalTitulo = `Movimientos - ${cuentaNombre}`;
     this.modalSubtitulo = `${this.modalMovimientos.length} movimiento(s) en el período`;
+    this.modalCuentaId = cuentaId; // NUEVO: Guardar ID de cuenta
     this.isModalOpen = true;
   }
 
@@ -504,6 +502,7 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     this.modalMovimientos = [];
     this.modalTitulo = '';
     this.modalSubtitulo = '';
+    this.modalCuentaId = null; // NUEVO: Limpiar ID de cuenta
   }
 
   private formatearFecha(fecha: string): string {

@@ -28,6 +28,7 @@ export class MovimientosModalComponent implements OnChanges {
   @Input() titulo: string = "Movimientos";
   @Input() subtitulo: string = "";
   @Input() isOpen: boolean = false;
+  @Input() cuentaId: number | null = null; // NUEVO: ID de la cuenta actual
 
   @Output() close = new EventEmitter<void>();
 
@@ -129,5 +130,15 @@ export class MovimientosModalComponent implements OnChanges {
 
   get totalTraslados(): number {
     return this.traslados.reduce((sum, m) => sum + (+m.valor || 0), 0);
+  }
+
+  /**
+   * Determinar si un traslado es de ENTRADA para la cuenta actual
+   * - Entrada: cuando la cuenta actual es cuenta_destino
+   * - Salida: cuando la cuenta actual es cuenta_origen
+   */
+  esEntrada(movimiento: Movimiento): boolean {
+    if (!this.cuentaId) return false;
+    return movimiento.cuenta_destino_id === this.cuentaId;
   }
 }

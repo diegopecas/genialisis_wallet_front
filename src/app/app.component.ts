@@ -134,7 +134,6 @@ export class AppComponent implements OnInit {
 
             if (!periodoActualExiste) {
               // Si el periodo actual no tiene datos, usar el último periodo disponible
-              console.log("Periodo actual sin datos, usando último disponible");
               this.usarUltimoPeriodoDisponible();
             } else {
               // El periodo actual existe, solo actualizar meses
@@ -175,11 +174,7 @@ export class AppComponent implements OnInit {
     // El último mes del último año
     const ultimoMes = Math.max(...ultimoPeriodo.meses);
 
-    console.log(
-      "Cambiando a último periodo disponible:",
-      ultimoPeriodo.anio,
-      ultimoMes
-    );
+
 
     this.anioSeleccionado = ultimoPeriodo.anio;
     this.mesSeleccionado = ultimoMes;

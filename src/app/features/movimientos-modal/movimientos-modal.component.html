@@ -112,15 +112,22 @@
       <!-- TRASLADOS -->
       <div class="movimientos-section" *ngIf="traslados.length > 0">
         <h3 class="section-header traslado">
-          <span class="header-icon">↻</span>
+          <span class="header-icon">⇄</span>
           Traslados ({{ traslados.length }})
         </h3>
         <div class="movimientos-list">
           <div class="movimiento-item traslado" *ngFor="let mov of traslados">
-            <div class="movimiento-icon">↻</div>
+            <div class="movimiento-icon">{{ mov.concepto_icono }}</div>
             
             <div class="movimiento-info">
-              <div class="movimiento-concepto">{{ mov.cuenta_origen_nombre }} → {{ mov.cuenta_destino_nombre }}</div>
+              <!-- Mostrar dirección según la cuenta actual -->
+              <div class="movimiento-concepto" *ngIf="esEntrada(mov)">
+                <span class="traslado-direccion entrada">↗ Entrada:</span> {{ mov.cuenta_origen_nombre }} → {{ mov.cuenta_destino_nombre }}
+              </div>
+              <div class="movimiento-concepto" *ngIf="!esEntrada(mov)">
+                <span class="traslado-direccion salida">↘ Salida:</span> {{ mov.cuenta_origen_nombre }} → {{ mov.cuenta_destino_nombre }}
+              </div>
+              
               <div class="movimiento-categoria">
                 <span class="categoria-icon">{{ mov.categoria_icono }}</span>
                 {{ mov.categoria_nombre }}

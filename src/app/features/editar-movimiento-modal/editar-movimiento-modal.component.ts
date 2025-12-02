@@ -63,12 +63,15 @@ export class EditarMovimientoModalComponent implements OnChanges {
   cargarDatosMovimiento(): void {
     if (!this.movimiento) return;
 
+    // NUEVO: Los traslados usan 'notas', otros movimientos usan 'detalle'
+    const detalleONotas = this.movimiento.notas || this.movimiento.detalle || '';
+
     // Precargar datos del formulario
     this.editarForm.patchValue({
       concepto_id: this.movimiento.concepto_id,
       valor: this.movimiento.valor,
       fecha: this.movimiento.fecha,
-      detalle: this.movimiento.detalle || ''
+      detalle: detalleONotas
     });
 
     // Formatear valor
@@ -174,6 +177,13 @@ export class EditarMovimientoModalComponent implements OnChanges {
         ...this.editarForm.value,
         circulos_ids: [this.circuloId]
       };
+
+      // NUEVO: Si es un traslado, cambiar 'detalle' por 'notas'
+      if (this.movimiento && this.movimiento.tipo_movimiento === 'Traslado') {
+        formData.notas = formData.detalle;
+        delete formData.detalle;
+      }
+
       this.save.emit(formData);
     }
   }

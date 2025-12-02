@@ -33,6 +33,9 @@ export class TrasladosComponent implements OnInit {
   searchMovimientos: string = '';
   valorFormateado: string = '';
   
+  // NUEVO: Movimientos del período para calcular saldos
+  movimientosPeriodo: any[] = [];
+  
   // Variables para paginación
   limitePorPagina: number = 10;
   totalRegistrosCargados: number = 0;
@@ -90,6 +93,7 @@ export class TrasladosComponent implements OnInit {
         this.limitePorPagina = 10;
         this.hayMasRegistros = true;
         this.cargarTraslados();
+        this.cargarMovimientosPeriodo(); // NUEVO: Cargar movimientos para calcular saldos
       }
     });
   }
@@ -99,11 +103,9 @@ export class TrasladosComponent implements OnInit {
    * Solo carga el primero que encuentre de tipo 3
    */
   cargarConceptoTraslado(): void {
-    console.log('🔍 Buscando conceptos de tipo TRASLADO (tipo_mov_id=3)...');
     
     this.conceptosService.getConceptos(this.circuloId, 3).subscribe({
       next: (response) => {
-        console.log('📥 Respuesta de conceptos:', response);
         
         if (response.success && response.data.categorias.length > 0) {
           // Buscar en TODAS las categorías el primer concepto con tipo_mov_id = 3
@@ -116,7 +118,6 @@ export class TrasladosComponent implements OnInit {
               
               if (conceptosTraslado.length > 0) {
                 conceptoEncontrado = conceptosTraslado[0];
-                console.log('✅ Concepto de traslado encontrado:', conceptoEncontrado);
                 break;
               }
             }
@@ -144,6 +145,10 @@ export class TrasladosComponent implements OnInit {
       next: (response) => {
         if (response.success) {
           this.cuentas = Array.isArray(response.data) ? response.data : response.data.cuentas || [];
+          // Calcular saldos después de cargar cuentas
+          if (this.movimientosPeriodo.length > 0) {
+            this.calcularSaldosCuentas();
+          }
         }
       },
       error: (error) => {
@@ -171,6 +176,95 @@ export class TrasladosComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  /**
+   * Cargar TODOS los movimientos del período para calcular saldos
+   */
+  cargarMovimientosPeriodo(): void {
+    // Cargar TODOS los movimientos (sin límite) para cálculo correcto de saldos
+    this.movimientosService.getMovimientos(0, this.circuloId, this.anio, this.mes, 0).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.movimientosPeriodo = response.data.movimientos;
+          
+          // Calcular saldos después de cargar movimientos
+          this.calcularSaldosCuentas();
+        }
+      },
+      error: (error: any) => {
+        console.error('Error cargando movimientos del período:', error);
+      }
+    });
+  }
+
+  /**
+   * Calcular saldos de cuentas con movimientos del período
+   * Igual que en balance.component.ts
+   */
+  calcularSaldosCuentas(): void {
+
+    
+    // Crear mapa de totales por cuenta
+    const cuentasMap = new Map<number, {
+      total_ingresos: number;
+      total_gastos: number;
+      traslados_entrada: number;
+      traslados_salida: number;
+    }>();
+
+    // Inicializar todas las cuentas
+    this.cuentas.forEach(cuenta => {
+      cuentasMap.set(cuenta.id, {
+        total_ingresos: 0,
+        total_gastos: 0,
+        traslados_entrada: 0,
+        traslados_salida: 0
+      });
+    });
+
+    // Procesar cada movimiento
+    this.movimientosPeriodo.forEach(mov => {
+      const valor = typeof mov.valor === 'string' ? parseFloat(mov.valor) : (mov.valor || 0);
+
+      // Ingresos y Gastos PUROS (sin traslados)
+      if (mov.cuenta_id && cuentasMap.has(mov.cuenta_id)) {
+        const cuenta = cuentasMap.get(mov.cuenta_id)!;
+        
+        if (mov.tipo_movimiento === 'Ingreso') {
+          cuenta.total_ingresos += valor;
+        } else if (mov.tipo_movimiento === 'Gasto') {
+          cuenta.total_gastos += valor;
+        }
+      }
+
+      // Traslados ORIGEN (sale dinero)
+      if (mov.cuenta_origen_id && cuentasMap.has(mov.cuenta_origen_id)) {
+        const cuentaOrigen = cuentasMap.get(mov.cuenta_origen_id)!;
+        cuentaOrigen.traslados_salida += valor;
+      }
+
+      // Traslados DESTINO (entra dinero)
+      if (mov.cuenta_destino_id && cuentasMap.has(mov.cuenta_destino_id)) {
+        const cuentaDestino = cuentasMap.get(mov.cuenta_destino_id)!;
+        cuentaDestino.traslados_entrada += valor;
+      }
+    });
+
+    // Actualizar saldos de cuentas
+    this.cuentas.forEach(cuenta => {
+      if (cuentasMap.has(cuenta.id)) {
+        const totales = cuentasMap.get(cuenta.id)!;
+        
+        // FÓRMULA: saldo = (ingresos + traslados_entrada) - (gastos + traslados_salida)
+        cuenta.saldo_actual = (totales.total_ingresos + totales.traslados_entrada) - 
+                               (totales.total_gastos + totales.traslados_salida);
+        
+
+      }
+    });
+
+
   }
 
   cargarTodosDelPeriodo(): void {
@@ -237,13 +331,10 @@ export class TrasladosComponent implements OnInit {
       circulos_ids: [this.circuloId]
     };
 
-    // LOG para debug
-    console.log('📤 Enviando traslado:', formData);
-    console.log('📝 Concepto usado:', this.conceptoTraslado);
+
 
     this.movimientosService.create(formData).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta exitosa:', response);
         if (response.success) {
           this.trasladoForm.reset({
             fecha: this.obtenerFechaLocal()
@@ -254,6 +345,7 @@ export class TrasladosComponent implements OnInit {
           this.hayMasRegistros = true;
           this.cargarTraslados();
           this.cargarCuentas();
+          this.cargarMovimientosPeriodo(); // Recalcular saldos
         }
         this.loading = false;
       },
@@ -288,6 +380,7 @@ export class TrasladosComponent implements OnInit {
           if (response.success) {
             this.cargarTraslados();
             this.cargarCuentas();
+            this.cargarMovimientosPeriodo(); // Recalcular saldos
           }
         },
         error: (error: any) => console.error('Error eliminando traslado:', error)
@@ -360,6 +453,7 @@ export class TrasladosComponent implements OnInit {
           this.hayMasRegistros = true;
           this.cargarTraslados();
           this.cargarCuentas();
+          this.cargarMovimientosPeriodo(); // Recalcular saldos
         }
         this.loading = false;
       },

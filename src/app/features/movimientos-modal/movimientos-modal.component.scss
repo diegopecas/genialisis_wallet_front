@@ -322,6 +322,19 @@
   font-weight: 600;
   color: #1a1a1a;
   margin-bottom: 0.25rem;
+
+  .traslado-direccion {
+    font-weight: 700;
+    margin-right: 0.5rem;
+
+    &.entrada {
+      color: #4caf50;
+    }
+
+    &.salida {
+      color: #ff9800;
+    }
+  }
 }
 
 .movimiento-categoria {
