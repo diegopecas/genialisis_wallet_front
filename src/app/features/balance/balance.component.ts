@@ -1,8 +1,6 @@
 /**
- * BalanceComponent
- * Balance con saldo anterior acumulado correctamente
- * NUEVA FUNCIONALIDAD: Mostrar movimientos en modal al hacer clic
- * ACTUALIZADO: Usa selectores globales del header vía PeriodoService
+ * BalanceComponent - CON SECCIÓN DE CUENTAS (CORREGIDO)
+ * Balance con totales por cuenta y modal de movimientos
  */
 
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
@@ -10,6 +8,7 @@ import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { AuthService } from '../../core/services/auth.service';
 import { MovimientosService } from '../../core/services/movimientos.service';
+import { CuentasService } from '../../core/services/cuentas.service';
 import { PeriodoService } from '../../core/services/periodo.service';
 import { MovimientosModalComponent } from '../movimientos-modal/movimientos-modal.component';
 import {
@@ -24,6 +23,19 @@ import {
 } from '../../core/models/movimiento.model';
 
 Chart.register(...registerables);
+
+// NUEVO: Interfaz para totales por cuenta
+interface TotalPorCuenta {
+  cuenta_id: number;
+  cuenta_nombre: string;
+  cuenta_icono: string;
+  saldo_actual: number;
+  total_ingresos: number;        // Solo tipo 1 (ingresos puros)
+  total_gastos: number;          // Solo tipo 2 (gastos puros)
+  traslados_entrada: number;     // Solo tipo 3 cuenta_destino
+  traslados_salida: number;      // Solo tipo 3 cuenta_origen
+  cantidad_movimientos: number;
+}
 
 @Component({
   selector: 'app-balance',
@@ -51,6 +63,9 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   categoriaIngresos: TotalPorCategoria[] = [];
   categoriaGastos: TotalPorCategoria[] = [];
   
+  // NUEVO: Totales por cuenta
+  totalesPorCuenta: TotalPorCuenta[] = [];
+  
   // Array de movimientos del período
   movimientosPeriodo: Movimiento[] = [];
   
@@ -67,16 +82,17 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   expandirDetalle: boolean = false;
   expandirGraficoEvolucion: boolean = false;
   expandirGraficoCategoria: boolean = false;
+  expandirCuentas: boolean = false; // NUEVO
   
   loading = false;
   circuloId: number = 0;
   chart: Chart | null = null;
   chartBarras: Chart | null = null;
   datosGraficoCategoria: GraficoCategoria[] = [];
-  datosEvolucion: EvolucionMes[] = [];
+  datosEvolucion: any[] = [];
   periodoTextoCalculado: string = '';
   
-  // Periodo actual (viene del servicio compartido)
+  // Periodo actual
   anio: number = 0;
   mes: number = 0;
   
@@ -98,6 +114,7 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   constructor(
     private authService: AuthService,
     private movimientosService: MovimientosService,
+    private cuentasService: CuentasService, // NUEVO
     private periodoService: PeriodoService
   ) {
     const circulo = this.authService.getPrimerCirculo();
@@ -105,26 +122,66 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    // Suscribirse a cambios de periodo desde el header
     this.periodoService.periodo$.subscribe(periodo => {
       if (periodo.anio !== 0 && periodo.mes !== 0) {
         this.anio = periodo.anio;
         this.mes = periodo.mes;
-        this.cargarDatos();
+        this.cargarDatos(this.anio, this.mes);
       }
     });
   }
 
   ngAfterViewInit(): void {
-    // El gráfico se creará cuando se cargue la evolución
+    // Gráficos se crean cuando se expanden
   }
 
-  cargarDatos(): void {
-    this.loading = true;
-    const anio = this.anio;
-    const mes = this.mes;
+  get periodoTexto(): string {
+    return this.periodoTextoCalculado || '';
+  }
 
-    // Inicializar arrays por si las respuestas fallan
+  get mostrarGrafico(): boolean {
+    return this.datosEvolucion && this.datosEvolucion.length > 0;
+  }
+
+  toggleResumen(): void {
+    this.expandirResumen = !this.expandirResumen;
+  }
+
+  toggleTotalesDia(): void {
+    this.expandirTotalesDia = !this.expandirTotalesDia;
+  }
+
+  toggleCategoria(): void {
+    this.expandirCategoria = !this.expandirCategoria;
+  }
+
+  toggleDetalle(): void {
+    this.expandirDetalle = !this.expandirDetalle;
+  }
+
+  toggleGraficoEvolucion(): void {
+    this.expandirGraficoEvolucion = !this.expandirGraficoEvolucion;
+    if (this.expandirGraficoEvolucion && this.datosEvolucion && this.datosEvolucion.length > 0) {
+      setTimeout(() => this.actualizarGrafico(), 200);
+    }
+  }
+
+  toggleGraficoCategoria(): void {
+    this.expandirGraficoCategoria = !this.expandirGraficoCategoria;
+    if (this.expandirGraficoCategoria && this.datosGraficoCategoria && this.datosGraficoCategoria.length > 0) {
+      setTimeout(() => this.actualizarGraficoBarras(), 200);
+    }
+  }
+
+  // NUEVO: Toggle para cuentas
+  toggleCuentas(): void {
+    this.expandirCuentas = !this.expandirCuentas;
+  }
+
+  cargarDatos(anio: number, mes?: number): void {
+    this.loading = true;
+
+    // Resetear datos
     this.totalesPorDia = [];
     this.categoriaIngresos = [];
     this.categoriaGastos = [];
@@ -182,7 +239,6 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     ]).then(() => {
       // Calcular saldo final después de que ambas promesas se resuelvan
       this.balance.saldo_final = (+this.balance.saldo_anterior) + (+this.balance.balance_neto);
-      
     });
 
     // NUEVO: Cargar TODOS los movimientos del período (sin límite)
@@ -196,6 +252,8 @@ export class BalanceComponent implements OnInit, AfterViewInit {
       next: (response) => {
         this.movimientosPeriodo = response?.data?.movimientos || [];
         console.log(`Movimientos cargados: ${this.movimientosPeriodo.length}`);
+        // NUEVO: Calcular totales por cuenta
+        this.calcularTotalesPorCuenta();
       },
       error: (error) => {
         console.error('Error cargando movimientos:', error);
@@ -218,8 +276,8 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     this.movimientosService.getTotalesPorCategoria(this.circuloId, anio, mes).subscribe({
       next: (response) => {
         const totales = response?.data?.totales || [];
-        this.categoriaIngresos = totales.filter(t => t.tipo_movimiento === 'Ingreso') || [];
-        this.categoriaGastos = totales.filter(t => t.tipo_movimiento === 'Gasto') || [];
+        this.categoriaIngresos = totales.filter((t: any) => t.tipo_movimiento === 'Ingreso') || [];
+        this.categoriaGastos = totales.filter((t: any) => t.tipo_movimiento === 'Gasto') || [];
       },
       error: (error) => {
         console.error('Error cargando totales por categoría:', error);
@@ -232,8 +290,8 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     this.movimientosService.getBalanceDetallado(this.circuloId, anio, mes).subscribe({
       next: (response) => {
         const detalle = response?.data?.detalle || [];
-        this.detalleIngresos = detalle.filter(d => d.tipo_movimiento === 'Ingreso') || [];
-        this.detalleGastos = detalle.filter(d => d.tipo_movimiento === 'Gasto') || [];
+        this.detalleIngresos = detalle.filter((d: any) => d.tipo_movimiento === 'Ingreso') || [];
+        this.detalleGastos = detalle.filter((d: any) => d.tipo_movimiento === 'Gasto') || [];
         this.loading = false;
       },
       error: (error) => {
@@ -273,13 +331,137 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     }
   }
 
+  // NUEVO: Calcular totales por cuenta desde los movimientos
+  private calcularTotalesPorCuenta(): void {
+    console.log('🔍 === INICIANDO CÁLCULO DE TOTALES POR CUENTA ===');
+    console.log('📦 Movimientos del período:', this.movimientosPeriodo.length);
+    
+    const cuentasMap = new Map<number, TotalPorCuenta>();
+
+    this.movimientosPeriodo.forEach((mov, index) => {
+      // IMPORTANTE: Convertir valor a número (puede venir como string o number)
+      const valor = typeof mov.valor === 'string' ? parseFloat(mov.valor) : (mov.valor || 0);
+      
+      console.log(`\n📝 Movimiento #${index + 1}:`, {
+        tipo: mov.tipo_movimiento,
+        valor: mov.valor,
+        cuenta_id: mov.cuenta_id,
+        cuenta_nombre: mov.cuenta_nombre,
+        cuenta_origen_id: mov.cuenta_origen_id,
+        cuenta_origen_nombre: mov.cuenta_origen_nombre,
+        cuenta_destino_id: mov.cuenta_destino_id,
+        cuenta_destino_nombre: mov.cuenta_destino_nombre
+      });
+
+      // Para ingresos y gastos PUROS (sin traslados)
+      if (mov.cuenta_id) {
+        if (!cuentasMap.has(mov.cuenta_id)) {
+          cuentasMap.set(mov.cuenta_id, {
+            cuenta_id: mov.cuenta_id,
+            cuenta_nombre: mov.cuenta_nombre || 'Sin nombre',
+            cuenta_icono: mov.cuenta_icono || '💳',
+            saldo_actual: 0,
+            total_ingresos: 0,
+            total_gastos: 0,
+            traslados_entrada: 0,
+            traslados_salida: 0,
+            cantidad_movimientos: 0
+          });
+          console.log(`  ✅ Nueva cuenta creada: ${mov.cuenta_nombre}`);
+        }
+
+        const cuenta = cuentasMap.get(mov.cuenta_id)!;
+        cuenta.cantidad_movimientos++;
+
+        if (mov.tipo_movimiento === 'Ingreso') {
+          cuenta.total_ingresos += valor;
+          console.log(`  💰 Ingreso PURO: +$${valor} → ${mov.cuenta_nombre}`);
+        } else if (mov.tipo_movimiento === 'Gasto') {
+          cuenta.total_gastos += valor;
+          console.log(`  💸 Gasto PURO: -$${valor} → ${mov.cuenta_nombre}`);
+        }
+      }
+
+      // Para traslados ORIGEN (sale dinero)
+      if (mov.cuenta_origen_id) {
+        console.log(`  🔄 Traslado detectado - ORIGEN`);
+        if (!cuentasMap.has(mov.cuenta_origen_id)) {
+          cuentasMap.set(mov.cuenta_origen_id, {
+            cuenta_id: mov.cuenta_origen_id,
+            cuenta_nombre: mov.cuenta_origen_nombre || 'Sin nombre',
+            cuenta_icono: mov.cuenta_origen_icono || '💳',
+            saldo_actual: 0,
+            total_ingresos: 0,
+            total_gastos: 0,
+            traslados_entrada: 0,
+            traslados_salida: 0,
+            cantidad_movimientos: 0
+          });
+          console.log(`  ✅ Nueva cuenta creada (origen): ${mov.cuenta_origen_nombre}`);
+        }
+        const cuentaOrigen = cuentasMap.get(mov.cuenta_origen_id)!;
+        cuentaOrigen.cantidad_movimientos++;
+        cuentaOrigen.traslados_salida += valor; // Traslado SALE de esta cuenta
+        console.log(`  ↘️ Traslado SALIDA: -$${valor} de ${mov.cuenta_origen_nombre}`);
+      }
+
+      // Para traslados DESTINO (entra dinero)
+      if (mov.cuenta_destino_id) {
+        console.log(`  🔄 Traslado detectado - DESTINO`);
+        if (!cuentasMap.has(mov.cuenta_destino_id)) {
+          cuentasMap.set(mov.cuenta_destino_id, {
+            cuenta_id: mov.cuenta_destino_id,
+            cuenta_nombre: mov.cuenta_destino_nombre || 'Sin nombre',
+            cuenta_icono: mov.cuenta_destino_icono || '💳',
+            saldo_actual: 0,
+            total_ingresos: 0,
+            total_gastos: 0,
+            traslados_entrada: 0,
+            traslados_salida: 0,
+            cantidad_movimientos: 0
+          });
+          console.log(`  ✅ Nueva cuenta creada (destino): ${mov.cuenta_destino_nombre}`);
+        }
+        const cuentaDestino = cuentasMap.get(mov.cuenta_destino_id)!;
+        cuentaDestino.cantidad_movimientos++;
+        cuentaDestino.traslados_entrada += valor; // Traslado ENTRA a esta cuenta
+        console.log(`  ↗️ Traslado ENTRADA: +$${valor} a ${mov.cuenta_destino_nombre}`);
+      }
+    });
+
+    console.log('\n📊 === RESUMEN DE CUENTAS PROCESADAS ===');
+    console.log('Total de cuentas:', cuentasMap.size);
+    
+    // CALCULAR SALDO ACTUAL para cada cuenta
+    Array.from(cuentasMap.values()).forEach(cuenta => {
+      // ✅ Fórmula: ingresos - gastos + traslados_entrada - traslados_salida
+      cuenta.saldo_actual = cuenta.total_ingresos 
+                          - cuenta.total_gastos 
+                          + cuenta.traslados_entrada 
+                          - cuenta.traslados_salida;
+      
+      console.log(`  ${cuenta.cuenta_icono} ${cuenta.cuenta_nombre}:`, {
+        movimientos: cuenta.cantidad_movimientos,
+        ingresos: cuenta.total_ingresos,
+        gastos: cuenta.total_gastos,
+        traslados_entrada: cuenta.traslados_entrada,
+        traslados_salida: cuenta.traslados_salida,
+        saldo_calculado: cuenta.saldo_actual
+      });
+    });
+
+    // Convertir a array y ordenar por saldo
+    this.totalesPorCuenta = Array.from(cuentasMap.values())
+      .sort((a, b) => b.saldo_actual - a.saldo_actual);
+    
+    console.log('\n✅ === RESULTADO FINAL ===');
+    console.log('Totales por cuenta:', this.totalesPorCuenta);
+  }
+
   // ========================================
-  // NUEVOS MÉTODOS PARA MODAL
+  // MÉTODOS PARA MODAL
   // ========================================
 
-  /**
-   * Mostrar movimientos por fecha
-   */
   mostrarMovimientosPorFecha(fecha: string): void {
     this.modalMovimientos = this.movimientosPeriodo.filter(m => m.fecha === fecha);
     this.modalTitulo = 'Movimientos del día';
@@ -287,9 +469,6 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     this.isModalOpen = true;
   }
 
-  /**
-   * Mostrar movimientos por categoría
-   */
   mostrarMovimientosPorCategoria(categoriaNombre: string, tipo: 'Ingreso' | 'Gasto'): void {
     this.modalMovimientos = this.movimientosPeriodo.filter(
       m => m.categoria_nombre === categoriaNombre && m.tipo_movimiento === tipo
@@ -299,9 +478,6 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     this.isModalOpen = true;
   }
 
-  /**
-   * Mostrar movimientos por concepto
-   */
   mostrarMovimientosPorConcepto(conceptoNombre: string, tipo: 'Ingreso' | 'Gasto'): void {
     this.modalMovimientos = this.movimientosPeriodo.filter(
       m => m.concepto_nombre === conceptoNombre && m.tipo_movimiento === tipo
@@ -311,9 +487,18 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     this.isModalOpen = true;
   }
 
-  /**
-   * Cerrar modal
-   */
+  // NUEVO: Mostrar movimientos por cuenta
+  mostrarMovimientosPorCuenta(cuentaId: number, cuentaNombre: string): void {
+    this.modalMovimientos = this.movimientosPeriodo.filter(m => 
+      m.cuenta_id === cuentaId || 
+      m.cuenta_origen_id === cuentaId || 
+      m.cuenta_destino_id === cuentaId
+    );
+    this.modalTitulo = `Movimientos - ${cuentaNombre}`;
+    this.modalSubtitulo = `${this.modalMovimientos.length} movimiento(s) en el período`;
+    this.isModalOpen = true;
+  }
+
   cerrarModal(): void {
     this.isModalOpen = false;
     this.modalMovimientos = [];
@@ -321,9 +506,6 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     this.modalSubtitulo = '';
   }
 
-  /**
-   * Formatear fecha para mostrar
-   */
   private formatearFecha(fecha: string): string {
     const date = new Date(fecha + 'T00:00:00');
     return date.toLocaleDateString('es-CO', { 
@@ -335,7 +517,7 @@ export class BalanceComponent implements OnInit, AfterViewInit {
   }
 
   // ========================================
-  // MÉTODOS EXISTENTES (sin cambios)
+  // MÉTODOS DE GRÁFICOS
   // ========================================
   
   actualizarGraficoBarras(): void {
@@ -347,102 +529,73 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     const ingresos = this.datosGraficoCategoria.map(c => c.total_ingresos);
     const gastos = this.datosGraficoCategoria.map(c => c.total_gastos);
 
-    // Destruir gráfico anterior si existe
     if (this.chartBarras) {
       this.chartBarras.destroy();
     }
 
-    setTimeout(() => {
-      if (this.chartBarrasCanvas && this.chartBarrasCanvas.nativeElement) {
-        const ctx = this.chartBarrasCanvas.nativeElement.getContext('2d');
+    const ctx = this.chartBarrasCanvas.nativeElement.getContext('2d');
+    if (!ctx) return;
 
-        if (ctx) {
-          this.chartBarras = new Chart(ctx, {
-            type: 'bar',
-            data: {
-              labels: labels,
-              datasets: [
-                {
-                  label: 'Ingresos',
-                  data: ingresos,
-                  backgroundColor: 'rgba(76, 175, 80, 0.8)',
-                  borderColor: '#4caf50',
-                  borderWidth: 1
-                },
-                {
-                  label: 'Gastos',
-                  data: gastos,
-                  backgroundColor: 'rgba(244, 67, 54, 0.8)',
-                  borderColor: '#f44336',
-                  borderWidth: 1
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: true,
-              plugins: {
-                legend: {
-                  display: true,
-                  position: 'top'
-                },
-                tooltip: {
-                  callbacks: {
-                    label: (context) => {
-                      let label = context.dataset.label || '';
-                      if (label) {
-                        label += ': ';
-                      }
-                      const value = context.parsed.y;
-                      if (value === null || value === undefined) {
-                        return label + '$0';
-                      }
-                      if (value >= 1000000) {
-                        label += '$' + (value / 1000000).toFixed(1) + 'M';
-                      } else if (value >= 1000) {
-                        label += '$' + (value / 1000).toFixed(0) + 'K';
-                      } else {
-                        label += '$' + value.toLocaleString('es-CO');
-                      }
-                      return label;
-                    }
-                  }
-                }
-              },
-              scales: {
-                x: {
-                  display: true
-                },
-                y: {
-                  display: true,
-                  beginAtZero: true,
-                  ticks: {
-                    callback: (value) => {
-                      const numValue = Number(value);
-                      if (numValue >= 1000000) {
-                        return '$' + (numValue / 1000000).toFixed(1) + 'M';
-                      } else if (numValue >= 1000) {
-                        return '$' + (numValue / 1000).toFixed(0) + 'K';
-                      }
-                      return '$' + numValue.toLocaleString('es-CO');
-                    }
-                  }
-                }
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Ingresos',
+            data: ingresos,
+            backgroundColor: '#10b981',
+            borderColor: '#059669',
+            borderWidth: 1
+          },
+          {
+            label: 'Gastos',
+            data: gastos,
+            backgroundColor: '#ef4444',
+            borderColor: '#dc2626',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y || 0;
+                return `${label}: ${this.formatearValor(value)}`;
               }
             }
-          });
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => this.formatearValorCorto(Number(value))
+            }
+          }
         }
       }
-    }, 100);
+    };
+
+    this.chartBarras = new Chart(ctx, config);
   }
-  
+
   cargarEvolucion(anio: number): void {
     this.movimientosService.getEvolucion(this.circuloId, anio).subscribe({
       next: (response) => {
         this.datosEvolucion = response?.data?.datos || [];
         // Solo crear el gráfico si está expandido
         if (this.expandirGraficoEvolucion && this.datosEvolucion.length > 0) {
-          this.actualizarGrafico(this.datosEvolucion);
+          this.actualizarGrafico();
         }
       },
       error: (error) => {
@@ -452,110 +605,81 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     });
   }
 
-  actualizarGrafico(datos: EvolucionMes[]): void {
-    if (!datos || datos.length === 0) {
+  actualizarGrafico(): void {
+    if (!this.datosEvolucion || this.datosEvolucion.length === 0) {
       return;
     }
-    
-    const labels = datos.map(d => d.mes_nombre);
-    const ingresos = datos.map(d => d.ingresos);
-    const gastos = datos.map(d => d.gastos);
 
-    // Destruir gráfico anterior si existe
+    const labels = this.datosEvolucion.map((d: any) => this.meses.find(m => m.value === d.mes)?.nombre || '');
+    const ingresos = this.datosEvolucion.map((d: any) => d.ingresos);
+    const gastos = this.datosEvolucion.map((d: any) => d.gastos);
+    const balances = this.datosEvolucion.map((d: any) => d.balance);
+
     if (this.chart) {
       this.chart.destroy();
     }
 
-    // Esperar a que el canvas esté disponible
-    setTimeout(() => {
-      if (this.chartCanvas && this.chartCanvas.nativeElement) {
-        const ctx = this.chartCanvas.nativeElement.getContext('2d');
+    const ctx = this.chartCanvas.nativeElement.getContext('2d');
+    if (!ctx) return;
 
-        if (ctx) {
-          this.chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: labels,
-              datasets: [
-                {
-                  data: ingresos,
-                  label: 'Ingresos',
-                  borderColor: '#4caf50',
-                  backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                  fill: true,
-                  tension: 0.4,
-                  pointRadius: 4,
-                  pointHoverRadius: 6
-                },
-                {
-                  data: gastos,
-                  label: 'Gastos',
-                  borderColor: '#f44336',
-                  backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                  fill: true,
-                  tension: 0.4,
-                  pointRadius: 4,
-                  pointHoverRadius: 6
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: true,
-              plugins: {
-                legend: {
-                  display: true,
-                  position: 'top'
-                },
-                tooltip: {
-                  mode: 'index',
-                  intersect: false,
-                  callbacks: {
-                    label: (context) => {
-                      let label = context.dataset.label || '';
-                      if (label) {
-                        label += ': ';
-                      }
-                      const value = context.parsed.y;
-                      if (value === null || value === undefined) {
-                        return label + '$0';
-                      }
-                      if (value >= 1000000) {
-                        label += '$' + (value / 1000000).toFixed(1) + 'M';
-                      } else if (value >= 1000) {
-                        label += '$' + (value / 1000).toFixed(0) + 'K';
-                      } else {
-                        label += '$' + value.toLocaleString('es-CO');
-                      }
-                      return label;
-                    }
-                  }
-                }
-              },
-              scales: {
-                x: {
-                  display: true
-                },
-                y: {
-                  display: true,
-                  ticks: {
-                    callback: (value) => {
-                      const numValue = Number(value);
-                      if (numValue >= 1000000) {
-                        return '$' + (numValue / 1000000).toFixed(1) + 'M';
-                      } else if (numValue >= 1000) {
-                        return '$' + (numValue / 1000).toFixed(0) + 'K';
-                      }
-                      return '$' + numValue.toLocaleString('es-CO');
-                    }
-                  }
-                }
+    const config: ChartConfiguration = {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Ingresos',
+            data: ingresos,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            tension: 0.3
+          },
+          {
+            label: 'Gastos',
+            data: gastos,
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            tension: 0.3
+          },
+          {
+            label: 'Balance Neto',
+            data: balances,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y || 0;
+                return `${label}: ${this.formatearValor(value)}`;
               }
             }
-          });
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => this.formatearValorCorto(Number(value))
+            }
+          }
         }
       }
-    }, 100);
+    };
+
+    this.chart = new Chart(ctx, config);
   }
 
   formatearValor(valor: number): string {
@@ -566,53 +690,12 @@ export class BalanceComponent implements OnInit, AfterViewInit {
     }).format(valor);
   }
 
-  get mostrarGrafico(): boolean {
-    return !this.mes;
-  }
-
-  // Getter que retorna propiedad precalculada
-  get periodoTexto(): string {
-    return this.periodoTextoCalculado;
-  }
-
-  // ========================================
-  // MÉTODOS TOGGLE PARA ACORDEÓN
-  // ========================================
-  toggleResumen(): void {
-    this.expandirResumen = !this.expandirResumen;
-  }
-
-  toggleTotalesDia(): void {
-    this.expandirTotalesDia = !this.expandirTotalesDia;
-  }
-
-  toggleCategoria(): void {
-    this.expandirCategoria = !this.expandirCategoria;
-  }
-
-  toggleDetalle(): void {
-    this.expandirDetalle = !this.expandirDetalle;
-  }
-
-  toggleGraficoEvolucion(): void {
-    this.expandirGraficoEvolucion = !this.expandirGraficoEvolucion;
-    // Si se expande
-    if (this.expandirGraficoEvolucion && !this.mes) {
-      // Si ya hay datos, recrear el gráfico
-      if (this.datosEvolucion && this.datosEvolucion.length > 0) {
-        setTimeout(() => this.actualizarGrafico(this.datosEvolucion), 100);
-      } else {
-        // Si no hay datos, cargarlos
-        setTimeout(() => this.cargarEvolucion(this.anio), 100);
-      }
+  formatearValorCorto(valor: number): string {
+    if (valor >= 1000000) {
+      return `$${(valor / 1000000).toFixed(1)}M`;
+    } else if (valor >= 1000) {
+      return `$${(valor / 1000).toFixed(0)}K`;
     }
-  }
-
-  toggleGraficoCategoria(): void {
-    this.expandirGraficoCategoria = !this.expandirGraficoCategoria;
-    // Si se expande y hay datos, recrear el gráfico
-    if (this.expandirGraficoCategoria && this.datosGraficoCategoria && this.datosGraficoCategoria.length > 0) {
-      setTimeout(() => this.actualizarGraficoBarras(), 100);
-    }
+    return `$${valor}`;
   }
 }

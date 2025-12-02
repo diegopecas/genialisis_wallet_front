@@ -48,6 +48,11 @@
           <span class="badge-text">{{ gastos.length }} Gasto(s)</span>
           <span class="badge-value">{{ formatearValor(totalGastos) }}</span>
         </div>
+        <div class="total-badge traslado" *ngIf="traslados.length > 0">
+          <span class="badge-icon">↻</span>
+          <span class="badge-text">{{ traslados.length }} Traslado(s)</span>
+          <span class="badge-value">{{ formatearValor(totalTraslados) }}</span>
+        </div>
       </div>
 
       <!-- INGRESOS -->
@@ -104,8 +109,35 @@
         </div>
       </div>
 
+      <!-- TRASLADOS -->
+      <div class="movimientos-section" *ngIf="traslados.length > 0">
+        <h3 class="section-header traslado">
+          <span class="header-icon">↻</span>
+          Traslados ({{ traslados.length }})
+        </h3>
+        <div class="movimientos-list">
+          <div class="movimiento-item traslado" *ngFor="let mov of traslados">
+            <div class="movimiento-icon">↻</div>
+            
+            <div class="movimiento-info">
+              <div class="movimiento-concepto">{{ mov.cuenta_origen_nombre }} → {{ mov.cuenta_destino_nombre }}</div>
+              <div class="movimiento-categoria">
+                <span class="categoria-icon">{{ mov.categoria_icono }}</span>
+                {{ mov.categoria_nombre }}
+              </div>
+              <div class="movimiento-fecha">{{ mov.fecha | date:'dd/MM/yyyy' }}</div>
+              <div class="movimiento-detalle" *ngIf="mov.detalle">{{ mov.detalle }}</div>
+            </div>
+            
+            <div class="movimiento-valor traslado">
+              {{ formatearValor(mov.valor) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Empty State -->
-      <div class="empty-state" *ngIf="ingresos.length === 0 && gastos.length === 0">
+      <div class="empty-state" *ngIf="ingresos.length === 0 && gastos.length === 0 && traslados.length === 0">
         <div class="empty-icon">🔍</div>
         <p *ngIf="busqueda">No se encontraron movimientos que coincidan con "{{ busqueda }}"</p>
         <p *ngIf="!busqueda">No hay movimientos para mostrar</p>

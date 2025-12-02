@@ -40,6 +40,7 @@ export class MovimientosModalComponent implements OnChanges {
   // NUEVO: Agrupados por tipo
   ingresos: Movimiento[] = [];
   gastos: Movimiento[] = [];
+  traslados: Movimiento[] = []; // NUEVO: Traslados
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes["movimientos"] || changes["isOpen"]) {
@@ -73,16 +74,21 @@ export class MovimientosModalComponent implements OnChanges {
         (m) =>
           m.concepto_nombre.toLowerCase().includes(busquedaLower) ||
           m.categoria_nombre.toLowerCase().includes(busquedaLower) ||
-          (m.detalle && m.detalle.toLowerCase().includes(busquedaLower))
+          (m.detalle && m.detalle.toLowerCase().includes(busquedaLower)) ||
+          (m.cuenta_origen_nombre && m.cuenta_origen_nombre.toLowerCase().includes(busquedaLower)) ||
+          (m.cuenta_destino_nombre && m.cuenta_destino_nombre.toLowerCase().includes(busquedaLower))
       );
     }
 
-    // Separar ingresos y gastos
+    // Separar ingresos, gastos y traslados
     this.ingresos = this.movimientosFiltrados.filter(
       (m) => m.tipo_movimiento === "Ingreso"
     );
     this.gastos = this.movimientosFiltrados.filter(
       (m) => m.tipo_movimiento === "Gasto"
+    );
+    this.traslados = this.movimientosFiltrados.filter(
+      (m) => m.tipo_movimiento === "Traslado"
     );
   }
 
@@ -119,5 +125,9 @@ export class MovimientosModalComponent implements OnChanges {
 
   get totalGastos(): number {
     return this.gastos.reduce((sum, m) => sum + (+m.valor || 0), 0);
+  }
+
+  get totalTraslados(): number {
+    return this.traslados.reduce((sum, m) => sum + (+m.valor || 0), 0);
   }
 }

@@ -193,6 +193,12 @@
     border: 1px solid #ffcdd2;
   }
 
+  &.traslado {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+  }
+
   .badge-icon {
     font-size: 1.125rem;
   }
@@ -246,6 +252,11 @@
     border-bottom-color: #ffcdd2;
   }
 
+  &.traslado {
+    color: #1565c0;
+    border-bottom-color: #bbdefb;
+  }
+
   .header-icon {
     font-size: 1.25rem;
   }
@@ -282,6 +293,10 @@
 
   &.gasto {
     border-left: 4px solid #f44336;
+  }
+
+  &.traslado {
+    border-left: 4px solid #2196f3;
   }
 }
 
@@ -349,6 +364,10 @@
 
   &.gasto {
     color: #f44336;
+  }
+
+  &.traslado {
+    color: #2196f3;
   }
 }
 

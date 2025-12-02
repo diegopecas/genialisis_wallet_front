@@ -59,7 +59,6 @@
     </h3>
 
     <div *ngIf="expandirTotalesDia">
-      <!-- NUEVO: Agregado (click) para abrir modal -->
       <div class="dia-item clickable" 
            *ngFor="let dia of totalesPorDia"
            (click)="mostrarMovimientosPorFecha(dia.fecha)">
@@ -83,9 +82,70 @@
     </div>
   </div>
 
+  <!-- NUEVO: TOTALES POR CUENTA - DISEÑO MEJORADO -->
+  <div class="totales-cuenta-section" *ngIf="!loading && totalesPorCuenta && totalesPorCuenta.length > 0">
+    <h3 class="section-title-general accordion-header" (click)="toggleCuentas()">
+      <span class="accordion-icon">{{ expandirCuentas ? '▼' : '▶' }}</span>
+      💳 Totales por Cuenta
+    </h3>
+
+    <div *ngIf="expandirCuentas" class="cuentas-grid">
+      <div class="cuenta-card clickable" 
+           *ngFor="let cuenta of totalesPorCuenta"
+           (click)="mostrarMovimientosPorCuenta(cuenta.cuenta_id, cuenta.cuenta_nombre)">
+        
+        <!-- Header con icono y nombre -->
+        <div class="cuenta-header">
+          <span class="cuenta-icon-large">{{ cuenta.cuenta_icono }}</span>
+          <div class="cuenta-info-header">
+            <div class="cuenta-nombre-card">{{ cuenta.cuenta_nombre }}</div>
+            <div class="cuenta-badge">{{ cuenta.cantidad_movimientos }} movimientos</div>
+          </div>
+        </div>
+
+        <!-- Saldo principal -->
+        <div class="cuenta-saldo-principal" [class.negative]="cuenta.saldo_actual < 0">
+          <div class="saldo-label">Saldo actual</div>
+          <div class="saldo-value">{{ formatearValor(cuenta.saldo_actual) }}</div>
+        </div>
+
+        <!-- Movimientos del período: 4 cajitas -->
+        <div class="cuenta-movimientos-periodo">
+          <div class="movimiento-item-card ingreso">
+            <span class="mov-icon">↗️</span>
+            <div class="mov-info">
+              <span class="mov-label">Ingresos</span>
+              <span class="mov-value">{{ formatearValor(cuenta.total_ingresos) }}</span>
+            </div>
+          </div>
+          <div class="movimiento-item-card gasto">
+            <span class="mov-icon">↘️</span>
+            <div class="mov-info">
+              <span class="mov-label">Gastos</span>
+              <span class="mov-value">{{ formatearValor(cuenta.total_gastos) }}</span>
+            </div>
+          </div>
+          <div class="movimiento-item-card traslado-entrada">
+            <span class="mov-icon">↻</span>
+            <div class="mov-info">
+              <span class="mov-label">Traslado Entrada</span>
+              <span class="mov-value">{{ formatearValor(cuenta.traslados_entrada) }}</span>
+            </div>
+          </div>
+          <div class="movimiento-item-card traslado-salida">
+            <span class="mov-icon">↻</span>
+            <div class="mov-info">
+              <span class="mov-label">Traslado Salida</span>
+              <span class="mov-value">{{ formatearValor(cuenta.traslados_salida) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- TOTALES POR CATEGORÍA -->
   <div class="totales-categoria-section" *ngIf="!loading">
-    <!-- Título general clickeable -->
     <h3 class="section-title-general accordion-header" (click)="toggleCategoria()">
       <span class="accordion-icon">{{ expandirCategoria ? '▼' : '▶' }}</span>
       Totales por Categoría
@@ -96,7 +156,6 @@
       <div class="categoria-card" *ngIf="categoriaIngresos && categoriaIngresos.length > 0">
         <h3 class="categoria-title income">💰 Ingresos por Categoría</h3>
         <div class="categoria-list">
-          <!-- NUEVO: Agregado (click) para abrir modal -->
           <div class="categoria-item clickable" 
                *ngFor="let cat of categoriaIngresos"
                (click)="mostrarMovimientosPorCategoria(cat.categoria_nombre, 'Ingreso')">
@@ -116,7 +175,6 @@
       <div class="categoria-card" *ngIf="categoriaGastos && categoriaGastos.length > 0">
         <h3 class="categoria-title expense">💸 Gastos por Categoría</h3>
         <div class="categoria-list">
-          <!-- NUEVO: Agregado (click) para abrir modal -->
           <div class="categoria-item clickable" 
                *ngFor="let cat of categoriaGastos"
                (click)="mostrarMovimientosPorCategoria(cat.categoria_nombre, 'Gasto')">
@@ -136,7 +194,6 @@
 
   <!-- DETALLE POR CONCEPTO -->
   <div class="detail-section" *ngIf="!loading">
-    <!-- Título general clickeable -->
     <h3 class="section-title-general accordion-header" (click)="toggleDetalle()">
       <span class="accordion-icon">{{ expandirDetalle ? '▼' : '▶' }}</span>
       Detalle por Concepto
@@ -147,7 +204,6 @@
       <div class="detail-card" *ngIf="detalleIngresos && detalleIngresos.length > 0">
         <h3 class="detail-title income">💰 Detalle Ingresos por Concepto</h3>
         <div class="detail-list">
-          <!-- NUEVO: Agregado (click) para abrir modal -->
           <div class="detail-item clickable" 
                *ngFor="let detalle of detalleIngresos"
                (click)="mostrarMovimientosPorConcepto(detalle.concepto_nombre, 'Ingreso')">
@@ -168,7 +224,6 @@
       <div class="detail-card" *ngIf="detalleGastos && detalleGastos.length > 0">
         <h3 class="detail-title expense">💸 Detalle Gastos por Concepto</h3>
         <div class="detail-list">
-          <!-- NUEVO: Agregado (click) para abrir modal -->
           <div class="detail-item clickable" 
                *ngFor="let detalle of detalleGastos"
                (click)="mostrarMovimientosPorConcepto(detalle.concepto_nombre, 'Gasto')">
@@ -213,7 +268,7 @@
   <div *ngIf="loading" class="loading-message">Cargando datos...</div>
 </div>
 
-<!-- NUEVO: Modal de movimientos -->
+<!-- Modal de movimientos -->
 <app-movimientos-modal
   [movimientos]="modalMovimientos"
   [titulo]="modalTitulo"
