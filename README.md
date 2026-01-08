@@ -302,3 +302,6 @@ Para problemas o dudas:
 
 ## Estructurq
 tree src /F > estructura_apps.txt
+
+## Start Server
+ng serve --port 4300

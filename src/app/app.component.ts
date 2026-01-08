@@ -96,20 +96,14 @@ export class AppComponent implements OnInit {
 
   /**
    * Cargar periodos disponibles desde el backend
+   * SIEMPRE obtiene TODOS los periodos sin importar el tab activo
    */
   cargarPeriodosDisponibles(): void {
     if (!this.currentCirculo) return;
 
-    // Determinar tipo de movimiento según tab activo
-    let tipoMovId: number | undefined = undefined;
-    if (this.activeTab === "gastos") {
-      tipoMovId = 2;
-    } else if (this.activeTab === "ingresos") {
-      tipoMovId = 1;
-    } else if (this.activeTab === "traslados") {
-      tipoMovId = 3; // ⬅️ NUEVO: Tipo 3 para traslados
-    }
-    // Para balance, no filtramos por tipo (undefined = todos)
+    // SIEMPRE pasamos undefined para obtener TODOS los periodos
+    // sin filtrar por tipo de movimiento
+    const tipoMovId: number | undefined = undefined;
 
     this.movimientosService
       .getPeriodosDisponibles(this.currentCirculo.id, tipoMovId)
@@ -215,6 +209,9 @@ export class AppComponent implements OnInit {
    * Cambiar año seleccionado
    */
   onAnioChange(): void {
+    // Convertir a número (el select retorna string)
+    this.anioSeleccionado = Number(this.anioSeleccionado);
+    
     this.actualizarMesesDisponibles();
 
     // Si el mes seleccionado no está disponible en el nuevo año, seleccionar el primero disponible
@@ -233,6 +230,9 @@ export class AppComponent implements OnInit {
    * Cambiar mes seleccionado
    */
   onMesChange(): void {
+    // Convertir a número (el select retorna string)
+    this.mesSeleccionado = Number(this.mesSeleccionado);
+    
     // Notificar cambio de periodo
     this.periodoService.setPeriodo(this.anioSeleccionado, this.mesSeleccionado);
   }
@@ -247,16 +247,13 @@ export class AppComponent implements OnInit {
 
   /**
    * Cambiar tab activo
-   * ACTUALIZADO: Ahora incluye tab "traslados"
    */
   changeTab(tab: string): void {
     this.activeTab = tab;
     this.router.navigate([`/${tab}`]);
 
-    // Recargar periodos disponibles cuando cambia el tab
-    if (tab === "gastos" || tab === "ingresos" || tab === "balance" || tab === "traslados") {
-      this.cargarPeriodosDisponibles();
-    }
+    // Ya no es necesario recargar periodos aquí porque siempre
+    // obtenemos todos los periodos sin importar el tab
   }
 
   logout(): void {
